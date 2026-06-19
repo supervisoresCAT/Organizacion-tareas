@@ -1620,7 +1620,23 @@ async function clearOverride() {
 function exportCSV() {
   const work = getWorkDays(currentYear, currentMonth).filter(d => !isHoliday(d));
   const mes  = MESES[currentMonth];
-  const w    = window.open('', '_blank');
+  // Crear iframe oculto para evitar bloqueo de popups
+  let iframe = document.getElementById('pdf-iframe');
+  if (!iframe) {
+    iframe = document.createElement('iframe');
+    iframe.id = 'pdf-iframe';
+    iframe.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;border:none;z-index:9999;background:white;';
+    document.body.appendChild(iframe);
+    // Botón para cerrar el PDF
+    const closeBtn = document.createElement('button');
+    closeBtn.id = 'pdf-close-btn';
+    closeBtn.textContent = '✕ Cerrar PDF';
+    closeBtn.style.cssText = 'position:fixed;top:12px;right:12px;z-index:10000;background:#1e3a8a;color:white;border:none;border-radius:8px;padding:8px 16px;font-weight:700;cursor:pointer;font-size:13px;box-shadow:0 4px 12px rgba(0,0,0,.3);';
+    closeBtn.onclick = () => { iframe.remove(); closeBtn.remove(); };
+    document.body.appendChild(closeBtn);
+  }
+  const w = iframe.contentWindow || iframe.contentDocument;
+  const doc = iframe.contentDocument || iframe.contentWindow.document;
 
   // Colores reales (hardcoded para el PDF — fuera del contexto CSS vars)
   const ROLE_COLORS = {
@@ -1706,7 +1722,8 @@ function exportCSV() {
     { label: 'Viernes',  sups: duplas[5] },
   ].map(d => `<div class="dupla-item"><span class="dupla-label">${d.label}</span> ${d.sups.map(s=>s.split(' ')[0]).join(' + ')}</div>`).join('');
 
-  w.document.write(`<!DOCTYPE html><html><head>
+  doc.open();
+  doc.write(`<!DOCTYPE html><html><head>
   <meta charset="UTF-8">
   <title>Rotación ${mes} ${currentYear} — Jerárquicos Salud</title>
   <style>
@@ -1788,10 +1805,13 @@ function exportCSV() {
     </div>
 
     <div class="footer">Jerárquicos Salud · Rotación de Supervisores · ${mes} ${currentYear}</div>
+    <div style="text-align:center;margin-top:20px;" class="no-print">
+      <button onclick="window.print()" style="background:#1e3a8a;color:white;border:none;border-radius:8px;padding:10px 28px;font-size:13px;font-weight:700;cursor:pointer;">🖨️ Imprimir / Guardar PDF</button>
+    </div>
   </div>
   <script>window.onload = () => { window.print(); }<\/script>
   </body></html>`);
-  w.document.close();
+  doc.close();
 }
 
 // ═══════════════════════════════════════════
