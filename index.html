@@ -218,11 +218,11 @@ thead th.ph-sticky{z-index:40;background:#f8fafc;}
 .ph-wbtn-h:hover{background:var(--impulsa);color:white;}
 .ph-wlbl{font-size:8px;color:var(--muted);width:100%;margin-top:3px;text-transform:uppercase;}
 .ph-table tbody td{padding:4px 5px;text-align:center;border-bottom:1px solid var(--border);}
-.ph-badge{width:82px;padding:5px 0;border-radius:7px;font-size:10px;font-weight:800;cursor:pointer;display:inline-block;text-align:center;}
+.ph-badge{width:96px;padding:5px 0;border-radius:7px;font-size:10px;font-weight:800;cursor:pointer;display:inline-block;text-align:center;}
 .bg-home{background:var(--conecta-lt);color:var(--conecta);}
 .bg-pres{background:var(--avanza-lt);color:#059669;}
 .bg-lic{background:var(--elite-lt);color:var(--elite);}
-.ph-time{width:82px;padding:4px 0;border-radius:6px;font-size:9px;font-weight:700;cursor:pointer;display:inline-block;text-align:center;background:var(--bg);color:var(--impulsa);border:1px solid var(--border);margin-top:3px;}
+.ph-time{width:96px;padding:4px 0;border-radius:6px;font-size:9px;font-weight:700;cursor:pointer;display:inline-block;text-align:center;background:var(--bg);color:var(--impulsa);border:1px solid var(--border);margin-top:3px;}
 .ph-foot td{background:var(--bg);font-size:10px;font-weight:700;padding:7px 5px;border-top:2px solid var(--border);text-align:center;}
 .ph-cnt-valid{background:#d1fae5;color:#065f46;padding:3px 8px;border-radius:6px;display:inline-block;}
 .ph-cnt-invalid{background:#fdeaea;color:var(--danger);padding:3px 8px;border-radius:6px;display:inline-block;}
@@ -1120,20 +1120,20 @@ async function sabSave(){
 // ══ MÓDULO 4: PLANILLA HORARIOS ══
 // ═══════════════════════════════════════════════════════════════
 let phSupervisores=[
-  {n:'Martin Paravan',   d:'Marcos Cortella',      g:'A',h:'08 a 16'},
-  {n:'Marcos Cortella',  d:'Martin Paravan',        g:'B',h:'08 a 16'},
-  {n:'Alejandra Sosa',   d:'Ximena Epelbaum',       g:'A',h:'08 a 16'},
-  {n:'Ximena Epelbaum',  d:'Alejandra Sosa',        g:'B',h:'11 a 19'},
-  {n:'Gisela Spies',     d:'Victoria Palombizio',   g:'A',h:'08 a 16'},
-  {n:'Victoria Palombizio',d:'Gisela Spies',        g:'B',h:'08 a 16'},
-  {n:'Fabricio Figueroa',d:'Jesica Carrasco',       g:'A',h:'11 a 19'},
-  {n:'Jesica Carrasco',  d:'Fabricio Figueroa',     g:'B',h:'08 a 16'},
-  {n:'Lumila Perri',     d:'David Leiva',           g:'A',h:'07 a 15'},
-  {n:'David Leiva',      d:'Lumila Perri',          g:'B',h:'07 a 15'},
-  {n:'Yanina Pacheco',   d:'Sol Celli',             g:'A',h:'08 a 16'},
-  {n:'Sol Celli',        d:'Yanina Pacheco',        g:'B',h:'08 a 16'},
+  {n:'Martin Paravan',   d:'Marcos Cortella',      g:'A',h:'08:00 a 16:00'},
+  {n:'Marcos Cortella',  d:'Martin Paravan',        g:'B',h:'08:00 a 16:00'},
+  {n:'Alejandra Sosa',   d:'Ximena Epelbaum',       g:'A',h:'08:00 a 16:00'},
+  {n:'Ximena Epelbaum',  d:'Alejandra Sosa',        g:'B',h:'11:00 a 19:00'},
+  {n:'Gisela Spies',     d:'Victoria Palombizio',   g:'A',h:'08:00 a 16:00'},
+  {n:'Victoria Palombizio',d:'Gisela Spies',        g:'B',h:'08:00 a 16:00'},
+  {n:'Fabricio Figueroa',d:'Jesica Carrasco',       g:'A',h:'11:00 a 19:00'},
+  {n:'Jesica Carrasco',  d:'Fabricio Figueroa',     g:'B',h:'08:00 a 16:00'},
+  {n:'Lumila Perri',     d:'David Leiva',           g:'A',h:'07:00 a 15:00'},
+  {n:'David Leiva',      d:'Lumila Perri',          g:'B',h:'07:00 a 15:00'},
+  {n:'Yanina Pacheco',   d:'Sol Celli',             g:'A',h:'08:00 a 16:00'},
+  {n:'Sol Celli',        d:'Yanina Pacheco',        g:'B',h:'08:00 a 16:00'},
 ];
-const phHorarios=['07 a 15','08 a 16','11 a 19'];
+const phHorarios=['07:00 a 15:00','08:00 a 16:00','11:00 a 19:00'];
 let phSavedData={};
 
 function phRender(){
@@ -1149,7 +1149,7 @@ function phRender(){
   const body=document.getElementById('ph-body');
   const foot=document.getElementById('ph-foot');
   header.innerHTML='<th class="ph-sticky">Supervisor / Dupla</th>';
-  foot.innerHTML='<td class="ph-sticky" style="text-align:left;padding-left:16px;"><b>Meta: 6</b></td>';
+  foot.innerHTML='<td class="ph-sticky" style="text-align:left;padding-left:16px;"><b>Presenciales (Meta: 6)</b></td>';
   days.forEach((wd,i)=>{
     header.innerHTML+=`<th>${['L','M','M','J','V'][wd.getDay()-1]}<br>${wd.getDate()}</th>`;
     foot.innerHTML+=`<td id="ph-cnt-${i}"><span class="ph-cnt-invalid">0</span></td>`;
@@ -1171,7 +1171,7 @@ function phRender(){
     </td>`;
     days.forEach((_,dIdx)=>{
       row+=`<td><div style="padding:3px;text-align:center;">
-        <div class="ph-badge bg-home" id="ph-st-${sIdx}-${dIdx}" onclick="phToggleSt(this)">HOME</div>
+        <div class="ph-badge bg-home" id="ph-st-${sIdx}-${dIdx}" onclick="phToggleSt(this)">HomeOffice</div>
         <div class="ph-time" id="ph-tm-${sIdx}-${dIdx}" onclick="phToggleTm(this)">${s.h}</div>
       </div></td>`;
     });
@@ -1183,7 +1183,7 @@ function phRender(){
 }
 
 function phToggleSt(el){
-  const s=[{c:'bg-home',t:'HOME'},{c:'bg-pres',t:'PRES'},{c:'bg-lic',t:'LIC'}];
+  const s=[{c:'bg-home',t:'HomeOffice'},{c:'bg-pres',t:'Presencial'},{c:'bg-lic',t:'LIC'}];
   let cur=s.findIndex(x=>el.classList.contains(x.c));
   const nxt=s[(cur+1)%3];
   el.className=`ph-badge ${nxt.c}`;el.innerText=nxt.t;phUpdateCounters();
@@ -1201,7 +1201,7 @@ function phSetWeekHorario(sIdx,week){
 function phUpdateCounters(){
   const n=document.querySelectorAll('#ph-header th').length-1;
   for(let j=0;j<n;j++){
-    let p=0;phSupervisores.forEach((_,i)=>{const el=document.getElementById(`ph-st-${i}-${j}`);if(el&&el.innerText==='PRES')p++;});
+    let p=0;phSupervisores.forEach((_,i)=>{const el=document.getElementById(`ph-st-${i}-${j}`);if(el&&el.innerText==='Presencial')p++;});
     const td=document.getElementById(`ph-cnt-${j}`);if(td){td.innerHTML=`<span class="${p===6?'ph-cnt-valid':'ph-cnt-invalid'}">${p}</span>`;}
   }
 }
@@ -1211,7 +1211,7 @@ function phAutoAB(){
     for(let d=0;d<n;d++){
       const wk=Math.floor(d/5),isP=(wk%2===0)?(s.g==='A'):(s.g==='B');
       const el=document.getElementById(`ph-st-${sIdx}-${d}`);
-      el.className=isP?'ph-badge bg-pres':'ph-badge bg-home';el.innerText=isP?'PRES':'HOME';
+      el.className=isP?'ph-badge bg-pres':'ph-badge bg-home';el.innerText=isP?'Presencial':'HomeOffice';
     }
   });
   phSupervisores.forEach((s,sIdx)=>{
@@ -1221,7 +1221,7 @@ function phAutoAB(){
         const me=document.getElementById(`ph-st-${sIdx}-${d}`),dup=document.getElementById(`ph-st-${duplaIdx}-${d}`);
         if(!me||!dup)continue;
         if(me.innerText===dup.innerText&&me.innerText!=='LIC'){
-          const opp=me.innerText==='PRES'?{c:'bg-home',t:'HOME'}:{c:'bg-pres',t:'PRES'};
+          const opp=me.innerText==='Presencial'?{c:'bg-home',t:'HomeOffice'}:{c:'bg-pres',t:'Presencial'};
           dup.className=`ph-badge ${opp.c}`;dup.innerText=opp.t;
         }
       }
