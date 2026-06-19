@@ -429,6 +429,8 @@ thead th.ph-sticky{z-index:40;background:#f8fafc;}
             <input type="month" id="ph-month" value="2026-07" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:12px;" onchange="phRender()">
             <button class="btn" onclick="phAutoAB()">⚡ Auto A/B</button>
             <button class="btn btn-primary" onclick="phSave()">💾 Guardar</button>
+            <button class="btn" onclick="phExportPDF()">📄 PDF</button>
+            <button class="btn" onclick="phExportExcel()">📊 Excel</button>
           </div>
         </div>
         <div class="card-body" style="padding:0;">
@@ -436,7 +438,7 @@ thead th.ph-sticky{z-index:40;background:#f8fafc;}
             <table class="ph-table" id="ph-table">
               <thead><tr id="ph-header"><th class="ph-sticky">Supervisor / Dupla</th></tr></thead>
               <tbody id="ph-body"></tbody>
-              <tfoot><tr id="ph-foot" class="ph-foot"><td class="ph-sticky" style="text-align:left;padding-left:16px;"><b>Presenciales (Meta: 6)</b></td></tr></tfoot>
+              <tfoot><tr id="ph-foot" class="ph-foot"><td class="ph-sticky" style="text-align:left;padding-left:16px;"><b>Presenciales (mín. 6)</b></td></tr></tfoot>
             </table>
           </div>
         </div>
@@ -1149,7 +1151,7 @@ function phRender(){
   const body=document.getElementById('ph-body');
   const foot=document.getElementById('ph-foot');
   header.innerHTML='<th class="ph-sticky">Supervisor / Dupla</th>';
-  foot.innerHTML='<td class="ph-sticky" style="text-align:left;padding-left:16px;"><b>Presenciales (Meta: 6)</b></td>';
+  foot.innerHTML='<td class="ph-sticky" style="text-align:left;padding-left:16px;"><b>Presenciales (mín. 6)</b></td>';
   days.forEach((wd,i)=>{
     header.innerHTML+=`<th>${['L','M','M','J','V'][wd.getDay()-1]}<br>${wd.getDate()}</th>`;
     foot.innerHTML+=`<td id="ph-cnt-${i}"><span class="ph-cnt-invalid">0</span></td>`;
@@ -1202,7 +1204,7 @@ function phUpdateCounters(){
   const n=document.querySelectorAll('#ph-header th').length-1;
   for(let j=0;j<n;j++){
     let p=0;phSupervisores.forEach((_,i)=>{const el=document.getElementById(`ph-st-${i}-${j}`);if(el&&el.innerText==='Presencial')p++;});
-    const td=document.getElementById(`ph-cnt-${j}`);if(td){td.innerHTML=`<span class="${p===6?'ph-cnt-valid':'ph-cnt-invalid'}">${p}</span>`;}
+    const td=document.getElementById(`ph-cnt-${j}`);if(td){td.innerHTML=`<span class="${p>=6?'ph-cnt-valid':'ph-cnt-invalid'}">${p}</span>`;}
   }
 }
 function phAutoAB(){
@@ -1268,7 +1270,242 @@ function phLoadSaved(month){
 }
 
 // ═══════════════════════════════════════════════════════════════
+// PLANILLA HORARIOS — EXPORT PDF
+// ═══════════════════════════════════════════════════════════════
+function phExportPDF() {
+  const monthVal = document.getElementById('ph-month').value;
+  const [y, m] = monthVal.split('-');
+  const mesNombre = MESES[parseInt(m)-1] + ' ' + y;
+
+  // Collect days
+  let d = new Date(y, m-1, 1);
+  while(d.getDay()!==1) d.setDate(d.getDate()+1);
+  let days=[]; let startM=d.getMonth();
+  while(d.getMonth()===startM||days.length<20){
+    if(d.getDay()!==0&&d.getDay()!==6) days.push(new Date(d));
+    d.setDate(d.getDate()+1); if(days.length>=25)break;
+  }
+
+  const diasL=['L','M','M','J','V'];
+  const stateColor = {'HomeOffice':['#f5effd','#7c3aed'],'Presencial':['#d1fae5','#059669'],'Licencia':['#eef0f8','#4a537d']};
+  const horColor = {'07:00 a 15:00':['#fff7ed','#c2410c'],'08:00 a 16:00':['#eff6ff','#1d4ed8'],'11:00 a 19:00':['#fdf4ff','#7e22ce']};
+
+  // Group by week
+  const semanas=[]; let sem=[];
+  days.forEach(d=>{ if(d.getDay()===1&&sem.length){semanas.push(sem);sem=[];} sem.push(d); });
+  if(sem.length) semanas.push(sem);
+
+  let tablaHTML='';
+  semanas.forEach((s,si)=>{
+    tablaHTML+=`<div class="st">Semana ${si+1} · ${s[0].getDate()} al ${s[s.length-1].getDate()} de ${mesNombre}</div>
+    <table><thead><tr><th class="cs">Supervisor</th>`;
+    s.forEach(wd=>{ tablaHTML+=`<th>${diasL[wd.getDay()-1]}<br><b>${wd.getDate()}</b></th>`; });
+    tablaHTML+=`</tr></thead><tbody>`;
+
+    phSupervisores.forEach((sup,sIdx)=>{
+      const ini=sup.n.split(' ').map(p=>p[0]).slice(0,2).join('');
+      tablaHTML+=`<tr class="${sIdx%2===0?'ev':'od'}"><td class="cs"><span class="av">${ini}</span>${sup.n}<div class="dup-lbl">↔ ${sup.d}</div></td>`;
+      s.forEach((_,dIdx)=>{
+        const realIdx=days.indexOf(s[dIdx])||0;
+        // find actual index in days array
+        const di=days.findIndex(x=>x.getTime()===s[dIdx].getTime());
+        const stEl=document.getElementById(`ph-st-${sIdx}-${di}`);
+        const tmEl=document.getElementById(`ph-tm-${sIdx}-${di}`);
+        const st=stEl?stEl.innerText:'HomeOffice';
+        const tm=tmEl?tmEl.innerText:sup.h;
+        const [sb,sc]=stateColor[st]||['#f8fafc','#64748b'];
+        const [hb,hc]=horColor[tm]||['#f8fafc','#64748b'];
+        tablaHTML+=`<td>
+          <span class="ch" style="background:${sb};color:${sc}">${st}</span>
+          <span class="ht" style="background:${hb};color:${hc}">${tm}</span>
+        </td>`;
+      });
+      tablaHTML+=`</tr>`;
+    });
+
+    // Presencial count row
+    tablaHTML+=`<tr class="cnt-row"><td class="cs" style="font-size:9px;font-weight:700;color:#64748b;">Presenciales</td>`;
+    s.forEach((_,dIdx)=>{
+      const di=days.findIndex(x=>x.getTime()===s[dIdx].getTime());
+      let p=0; phSupervisores.forEach((_2,sIdx)=>{ const el=document.getElementById(`ph-st-${sIdx}-${di}`); if(el&&el.innerText==='Presencial')p++; });
+      tablaHTML+=`<td><span style="background:${p>=6?'#d1fae5':'#fdeaea'};color:${p>=6?'#065f46':'#991b1b'};padding:2px 6px;border-radius:5px;font-size:10px;font-weight:800;">${p}</span></td>`;
+    });
+    tablaHTML+=`</tr></tbody></table>`;
+  });
+
+  // Guards section
+  const guardsHTML = Array.from(document.querySelectorAll('#ph-guards-body tr')).map(tr=>{
+    const tds=tr.querySelectorAll('td');
+    return `<tr><td style="font-weight:700;color:#00554e;padding:7px 12px;border-bottom:1px solid #f1f5f9;width:160px;">${tds[0]?.innerText||''}</td><td style="padding:7px 12px;border-bottom:1px solid #f1f5f9;">${tds[1]?.innerText||''}</td></tr>`;
+  }).join('');
+
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Horarios ${mesNombre}</title>
+  <style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Inter',sans-serif;background:#f8fafc;color:#1e293b;padding:20px;font-size:11px;}
+  .page{max-width:1100px;margin:0 auto;}
+  .hdr{background:linear-gradient(135deg,#4a537d,#6a73a1);border-radius:14px;padding:18px 24px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;}
+  .hdr h1{color:white;font-size:16px;font-weight:800;margin-bottom:2px;}.hdr p{color:rgba(255,255,255,.7);font-size:10px;}
+  .hdr-r{text-align:right;color:white;font-weight:700;font-size:12px;}.hdr-r small{display:block;color:rgba(255,255,255,.6);font-size:9px;font-weight:400;margin-top:2px;}
+  .leg-card{background:white;border-radius:10px;padding:10px 16px;margin-bottom:12px;border:1px solid #e2e8f0;display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
+  .leg-title{font-size:9px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.06em;width:100%;margin-bottom:2px;}
+  .leg-item{padding:3px 10px;border-radius:20px;font-size:9px;font-weight:700;}
+  .st{font-size:10px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.05em;margin:12px 0 5px;border-left:3px solid #4a537d;padding-left:7px;}
+  table{width:100%;border-collapse:collapse;background:white;border-radius:10px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.06);margin-bottom:6px;border:1px solid #e2e8f0;}
+  thead th{background:#f1f5f9;color:#64748b;font-size:9px;font-weight:700;text-transform:uppercase;padding:7px 4px;text-align:center;border-bottom:2px solid #e2e8f0;line-height:1.5;}
+  th.cs{text-align:left;padding-left:12px;min-width:155px;}thead th b{font-size:12px;color:#1e293b;display:block;}
+  tbody td{padding:4px 3px;text-align:center;border-bottom:1px solid #f1f5f9;vertical-align:middle;}
+  tbody td.cs{text-align:left;padding:6px 12px;font-weight:600;font-size:10px;white-space:nowrap;}
+  tr.ev td{background:white;}tr.od td{background:#fafbfc;}
+  tr.cnt-row td{background:#f8fafc;border-top:1px solid #e2e8f0;}
+  .av{display:inline-flex;width:20px;height:20px;border-radius:50%;background:#eef0f8;color:#4a537d;font-size:7px;font-weight:800;align-items:center;justify-content:center;margin-right:5px;vertical-align:middle;}
+  .dup-lbl{font-size:8px;color:#94a3b8;font-style:italic;margin-top:1px;}
+  .ch{display:inline-block;padding:3px 5px;border-radius:5px;font-size:9px;font-weight:700;white-space:nowrap;line-height:1.3;display:block;margin-bottom:2px;}
+  .ht{display:inline-block;padding:2px 5px;border-radius:4px;font-size:8px;font-weight:600;white-space:nowrap;}
+  .guards-card{background:white;border-radius:10px;overflow:hidden;border:1px solid #e2e8f0;box-shadow:0 1px 3px rgba(0,0,0,.06);}
+  .guards-title{background:#4a537d;color:white;padding:9px 14px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;}
+  .pb{text-align:center;margin:14px 0 4px;}.pb button{background:#4a537d;color:white;border:none;border-radius:8px;padding:9px 24px;font-size:12px;font-weight:700;cursor:pointer;}
+  .ft{text-align:center;color:#94a3b8;font-size:9px;margin-top:10px;padding-top:8px;border-top:1px solid #e2e8f0;}
+  @media print{body{background:white;padding:10px;}.pb{display:none;}
+  .ch,.av,.hdr{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  @page{size:A4 landscape;margin:8mm;}}
+  </style></head><body><div class="page">
+  <div class="hdr"><div><h1>Planilla de Horarios</h1><p>Jerárquicos Salud · Supervisores · ${mesNombre}</p></div>
+  <div class="hdr-r">${mesNombre}<small>Generado el ${new Date().toLocaleDateString('es-AR')}</small></div></div>
+  <div class="leg-card"><div class="leg-title">Referencias de estado</div>
+    <span class="leg-item" style="background:#f5effd;color:#7c3aed;">HomeOffice</span>
+    <span class="leg-item" style="background:#d1fae5;color:#059669;">Presencial</span>
+    <span class="leg-item" style="background:#eef0f8;color:#4a537d;">Licencia</span>
+    <span style="margin-left:12px;font-size:9px;font-weight:700;color:#64748b;">HORARIOS:</span>
+    <span class="leg-item" style="background:#fff7ed;color:#c2410c;">07:00 a 15:00</span>
+    <span class="leg-item" style="background:#eff6ff;color:#1d4ed8;">08:00 a 16:00</span>
+    <span class="leg-item" style="background:#fdf4ff;color:#7e22ce;">11:00 a 19:00</span>
+  </div>
+  ${tablaHTML}
+  <div style="display:grid;grid-template-columns:1fr;gap:12px;margin-top:14px;">
+    <div class="guards-card"><div class="guards-title">Guardias Semanales</div>
+    <table style="border-radius:0;box-shadow:none;border:none;">${guardsHTML}</table></div>
+  </div>
+  <div class="pb"><button onclick="window.print()">🖨️ Imprimir / Guardar como PDF</button></div>
+  <div class="ft">Jerárquicos Salud · Planilla de Horarios · ${mesNombre}</div>
+  </div></body></html>`;
+
+  const blob=new Blob([html],{type:'text/html;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.target='_blank';a.rel='noopener';a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PLANILLA HORARIOS — EXPORT EXCEL
+// ═══════════════════════════════════════════════════════════════
+function phExportExcel() {
+  const monthVal = document.getElementById('ph-month').value;
+  const [y, m] = monthVal.split('-');
+  const mesNombre = MESES[parseInt(m)-1] + ' ' + y;
+
+  let d = new Date(y, m-1, 1);
+  while(d.getDay()!==1) d.setDate(d.getDate()+1);
+  let days=[]; let startM=d.getMonth();
+  while(d.getMonth()===startM||days.length<20){
+    if(d.getDay()!==0&&d.getDay()!==6) days.push(new Date(d));
+    d.setDate(d.getDate()+1); if(days.length>=25)break;
+  }
+
+  const diasL=['L','M','M','J','V'];
+
+  // State colors for Excel (hex without #)
+  const stBg={'HomeOffice':'F5EFFD','Presencial':'D1FAE5','Licencia':'EEF0F8'};
+  const stFg={'HomeOffice':'7C3AED','Presencial':'059669','Licencia':'4A537D'};
+  const hBg={'07:00 a 15:00':'FFF7ED','08:00 a 16:00':'EFF6FF','11:00 a 19:00':'FDF4FF'};
+  const hFg={'07:00 a 15:00':'C2410C','08:00 a 16:00':'1D4ED8','11:00 a 19:00':'7E22CE'};
+
+  function xmlCol(bg, fg, bold, text, wrap) {
+    return `<Cell ss:StyleID="s${bg}${bold?'B':''}"><Data ss:Type="String">${text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</Data></Cell>`;
+  }
+
+  // Build styles
+  let styles = `
+    <Style ss:ID="header"><Font ss:Bold="1" ss:Color="#FFFFFF"/><Interior ss:Color="#4A537D" ss:Pattern="Solid"/><Alignment ss:Horizontal="Center" ss:Vertical="Center" ss:WrapText="1"/></Style>
+    <Style ss:ID="supName"><Font ss:Bold="1" ss:Color="#00554E"/><Alignment ss:Vertical="Center"/></Style>
+    <Style ss:ID="even"><Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/><Alignment ss:Horizontal="Center" ss:Vertical="Center" ss:WrapText="1"/></Style>
+    <Style ss:ID="odd"><Interior ss:Color="#FAFBFC" ss:Pattern="Solid"/><Alignment ss:Horizontal="Center" ss:Vertical="Center" ss:WrapText="1"/></Style>
+    <Style ss:ID="cntGreen"><Interior ss:Color="#D1FAE5" ss:Pattern="Solid"/><Font ss:Bold="1" ss:Color="#065F46"/><Alignment ss:Horizontal="Center" ss:Vertical="Center"/></Style>
+    <Style ss:ID="cntRed"><Interior ss:Color="#FDEAEA" ss:Pattern="Solid"/><Font ss:Bold="1" ss:Color="#991B1B"/><Alignment ss:Horizontal="Center" ss:Vertical="Center"/></Style>
+    <Style ss:ID="sHome"><Interior ss:Color="#F5EFFD" ss:Pattern="Solid"/><Font ss:Color="#7C3AED" ss:Bold="1"/><Alignment ss:Horizontal="Center" ss:Vertical="Center" ss:WrapText="1"/></Style>
+    <Style ss:ID="sPres"><Interior ss:Color="#D1FAE5" ss:Pattern="Solid"/><Font ss:Color="#059669" ss:Bold="1"/><Alignment ss:Horizontal="Center" ss:Vertical="Center" ss:WrapText="1"/></Style>
+    <Style ss:ID="sLic"><Interior ss:Color="#EEF0F8" ss:Pattern="Solid"/><Font ss:Color="#4A537D" ss:Bold="1"/><Alignment ss:Horizontal="Center" ss:Vertical="Center" ss:WrapText="1"/></Style>
+    <Style ss:ID="h715"><Interior ss:Color="#FFF7ED" ss:Pattern="Solid"/><Font ss:Color="#C2410C"/><Alignment ss:Horizontal="Center" ss:Vertical="Center" ss:WrapText="1"/></Style>
+    <Style ss:ID="h816"><Interior ss:Color="#EFF6FF" ss:Pattern="Solid"/><Font ss:Color="#1D4ED8"/><Alignment ss:Horizontal="Center" ss:Vertical="Center" ss:WrapText="1"/></Style>
+    <Style ss:ID="h1119"><Interior ss:Color="#FDF4FF" ss:Pattern="Solid"/><Font ss:Color="#7E22CE"/><Alignment ss:Horizontal="Center" ss:Vertical="Center" ss:WrapText="1"/></Style>
+    <Style ss:ID="title"><Font ss:Bold="1" ss:Size="14" ss:Color="#4A537D"/></Style>
+    <Style ss:ID="cnt"><Interior ss:Color="#F1F5F9" ss:Pattern="Solid"/><Font ss:Bold="1" ss:Color="#64748B"/><Alignment ss:Horizontal="Center" ss:Vertical="Center"/></Style>`;
+
+  const stStyleMap={'HomeOffice':'sHome','Presencial':'sPres','Licencia':'sLic'};
+  const hStyleMap={'07:00 a 15:00':'h715','08:00 a 16:00':'h816','11:00 a 19:00':'h1119'};
+
+  // Header row
+  let headerRow = `<Row ss:Height="36"><Cell ss:StyleID="header"><Data ss:Type="String">Supervisor</Data></Cell>`;
+  days.forEach(wd=>{
+    headerRow += `<Cell ss:StyleID="header"><Data ss:Type="String">${diasL[wd.getDay()-1]} ${wd.getDate()}</Data></Cell>`;
+  });
+  headerRow += `</Row>`;
+
+  // Data rows — each supervisor = 2 rows (estado + horario)
+  let dataRows='';
+  phSupervisores.forEach((sup,sIdx)=>{
+    const rowStyle=sIdx%2===0?'even':'odd';
+    // Row 1: Estado
+    let row1=`<Row ss:Height="22"><Cell ss:StyleID="supName" ss:MergeDown="1"><Data ss:Type="String">${sup.n}</Data></Cell>`;
+    let row2=`<Row ss:Height="18">`;
+    days.forEach((_,di)=>{
+      const stEl=document.getElementById(`ph-st-${sIdx}-${di}`);
+      const tmEl=document.getElementById(`ph-tm-${sIdx}-${di}`);
+      const st=stEl?stEl.innerText:'HomeOffice';
+      const tm=tmEl?tmEl.innerText:sup.h;
+      row1+=`<Cell ss:StyleID="${stStyleMap[st]||rowStyle}"><Data ss:Type="String">${st}</Data></Cell>`;
+      row2+=`<Cell ss:StyleID="${hStyleMap[tm]||rowStyle}"><Data ss:Type="String">${tm}</Data></Cell>`;
+    });
+    row1+=`</Row>`;row2+=`</Row>`;
+    dataRows+=row1+row2;
+  });
+
+  // Count row
+  let cntRow=`<Row ss:Height="22"><Cell ss:StyleID="cnt"><Data ss:Type="String">Presenciales</Data></Cell>`;
+  days.forEach((_,di)=>{
+    let p=0; phSupervisores.forEach((_2,sIdx)=>{ const el=document.getElementById(`ph-st-${sIdx}-${di}`); if(el&&el.innerText==='Presencial')p++; });
+    cntRow+=`<Cell ss:StyleID="${p>=6?'cntGreen':'cntRed'}"><Data ss:Type="Number">${p}</Data></Cell>`;
+  });
+  cntRow+=`</Row>`;
+
+  const xml=`<?xml version="1.0"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+  xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+  <Styles>${styles}</Styles>
+  <Worksheet ss:Name="${mesNombre}">
+    <Table>
+      <Row ss:Height="30"><Cell ss:StyleID="title"><Data ss:Type="String">Planilla de Horarios — ${mesNombre} — Jerárquicos Salud</Data></Cell></Row>
+      <Row ss:Height="6"/>
+      ${headerRow}
+      ${dataRows}
+      <Row ss:Height="6"/>
+      ${cntRow}
+    </Table>
+  </Worksheet>
+</Workbook>`;
+
+  const blob=new Blob([xml],{type:'application/vnd.ms-excel;charset=utf-8'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`Horarios_${mesNombre.replace(' ','_')}.xls`;
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),3000);
+}
+
+// ═══════════════════════════════════════════════════════════════
 // RESPALDO COMPLETO
+// ═══════════════════════════════════════════════════════════════
 // ═══════════════════════════════════════════════════════════════
 async function exportBackup() {
   setSyncStatus('saving');
