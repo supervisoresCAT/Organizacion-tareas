@@ -2,8 +2,12 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Organización Supers — Jerárquicos Salud</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Org Supers">
+<meta name="theme-color" content="#00554e">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -25,7 +29,7 @@
 body{font-family:'Inter','Segoe UI',sans-serif;background:var(--bg);color:var(--text);display:flex;min-height:100vh;}
 
 /* ── SIDEBAR ── */
-.sidebar{width:var(--sidebar-w);background:var(--impulsa);display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:100;transition:.3s;}
+.sidebar{width:var(--sidebar-w);background:var(--impulsa);display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:100;transition:transform .3s ease;will-change:transform;}
 .sb-brand{padding:18px 20px 14px;border-bottom:1px solid rgba(255,255,255,.1);}
 .sb-logo{background:white;color:var(--impulsa);width:36px;height:36px;border-radius:9px;font-weight:800;font-size:15px;display:flex;align-items:center;justify-content:center;margin-bottom:10px;}
 .sb-title{color:white;font-size:13px;font-weight:700;line-height:1.2;}
@@ -233,15 +237,95 @@ thead th.ph-sticky{z-index:40;background:#f8fafc;}
 .ph-guards-table td[contenteditable]:focus{background:#f0fdf9;border-radius:4px;}
 
 /* ── RESPONSIVE ── */
-@media(max-width:768px){
-  .sidebar{width:0;overflow:hidden;}
-  .sidebar.open{width:var(--sidebar-w);}
-  .main{margin-left:0;}
-  .mob-menu-btn{display:flex!important;}
-  .stats-row{grid-template-columns:1fr 1fr;}
-  .sab-grid{grid-template-columns:1fr;}
+/* ── RESPONSIVE & iOS ── */
+
+/* Touch targets mínimos iOS (44px) */
+.nav-item, .btn, .nav-btn, .view-tab, .landing-card { -webkit-tap-highlight-color: transparent; }
+button { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+
+/* Scroll suave iOS */
+.rot-table-wrap, .da-table-wrap, .ph-wrap, .scroll-area {
+  -webkit-overflow-scrolling: touch;
 }
-.mob-menu-btn{display:none;align-items:center;justify-content:center;width:34px;height:34px;border:1px solid var(--border);border-radius:8px;background:white;cursor:pointer;font-size:18px;flex-shrink:0;}
+
+/* Safe area iOS (notch / home bar) */
+.topbar { padding-left: max(24px, env(safe-area-inset-left)); padding-right: max(24px, env(safe-area-inset-right)); }
+.sidebar { padding-bottom: env(safe-area-inset-bottom); }
+.content { padding-bottom: max(24px, env(safe-area-inset-bottom)); }
+.landing-overlay { padding-bottom: max(24px, env(safe-area-inset-bottom)); }
+
+/* ── TABLET 900px ── */
+@media(max-width:900px){
+  :root { --sidebar-w: 200px; }
+  .content { padding: 16px; }
+  .rot-controls { gap: 6px; }
+  .da-table th, .da-table td { padding: 8px 10px; }
+  .ph-bottom { grid-template-columns: 1fr; }
+  .landing-cards { max-width: 480px; }
+  .stats-row { grid-template-columns: repeat(2,1fr); }
+}
+
+/* ── MOBILE 768px ── */
+@media(max-width:768px){
+  :root { --sidebar-w: 260px; }
+  .sidebar { transform: translateX(-100%); }
+  .sidebar.open { transform: translateX(0); }
+  .main { margin-left: 0; }
+  .mob-menu-btn { display: flex !important; }
+  .stats-row { grid-template-columns: 1fr 1fr; }
+  .sab-grid { grid-template-columns: 1fr; }
+  .content { padding: 12px; }
+  .card-header { flex-wrap: wrap; gap: 8px; }
+  .card-header h2 { font-size: 13px; }
+  .topbar-title { font-size: 13px; }
+  .rot-controls { gap: 6px; flex-wrap: wrap; }
+  .month-disp { min-width: 110px; font-size: 13px; }
+  .da-table-wrap { font-size: 11px; }
+  .ph-bottom { grid-template-columns: 1fr; }
+  .ph-wrap { max-height: 55vh; }
+  /* Landing mobile */
+  .landing-title { font-size: 1.6rem; }
+  .landing-cards { gap: 10px; }
+  .landing-card { padding: 18px 16px; }
+  .lc-icon { font-size: 1.6rem; }
+  .lc-title { font-size: 14px; }
+}
+
+/* ── SMALL MOBILE 480px ── */
+@media(max-width:480px){
+  .content { padding: 8px; }
+  .card-body { padding: 12px; }
+  .topbar { padding: 0 12px; gap: 8px; height: 52px; }
+  .btn { padding: 6px 10px; font-size: 11px; gap: 4px; }
+  /* Rotación — chips más chicos */
+  .chip { font-size: 8.5px; padding: 3px 3px; }
+  .rot-table thead th.col-sup { min-width: 110px; }
+  .rot-table tbody td.col-sup { padding: 6px 8px; font-size: 10px; }
+  /* Planilla horarios */
+  .ph-sticky { width: 120px; padding: 8px 10px; }
+  .ph-sup-name { font-size: 10px; }
+  .ph-badge { width: 78px; font-size: 9px; padding: 5px 2px; }
+  .ph-time { width: 78px; font-size: 8px; }
+  .ph-week-btns { display: none; } /* Ocultar en muy chico */
+  /* Tabla distribución anual */
+  .da-table { font-size: 10px; }
+  .da-table th, .da-table td { padding: 6px 8px; }
+  /* Sábados */
+  .sab-card { padding: 12px; }
+  /* Landing */
+  .landing-cards { grid-template-columns: 1fr; }
+  .landing-header { margin-bottom: 24px; }
+  .landing-logo { width: 48px; height: 48px; font-size: 18px; }
+  .landing-title { font-size: 1.4rem; }
+  .landing-sub { font-size: 12px; }
+  /* Duplas bar */
+  .duplas-bar { flex-direction: column; align-items: flex-start; gap: 5px; }
+  /* Legend */
+  .legend-bar { gap: 4px 8px; }
+  .leg-pill { font-size: 9px; padding: 1px 6px; }
+}
+
+.mob-menu-btn{display:none;align-items:center;justify-content:center;width:40px;height:40px;border:1px solid var(--border);border-radius:10px;background:white;cursor:pointer;font-size:18px;flex-shrink:0;-webkit-tap-highlight-color:transparent;}
 .mob-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:99;}
 .mob-overlay.open{display:block;}
 
@@ -261,6 +345,8 @@ thead th.ph-sticky{z-index:40;background:#f8fafc;}
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   padding:24px;overflow-y:auto;
   transition:opacity .5s ease, transform .5s ease;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior:contain;
 }
 .landing-overlay.hiding{opacity:0;transform:scale(1.04);pointer-events:none;}
 .landing-bg{position:absolute;inset:0;overflow:hidden;pointer-events:none;}
