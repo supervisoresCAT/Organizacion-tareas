@@ -590,10 +590,13 @@ const DUPLAS_BASE = [
 ];
 
 function getDuplasForMonth(year, month) {
+  // Offset: meses desde Julio 2026
   const off = (((month - 6) + (year - 2026)*12) % 6 + 6) % 6;
+  // Rotación correcta: Vie→07-15, 07-15→Lun, Lun→Mar...
+  // Cada mes la dupla de posición P es DUPLAS_BASE[(P - off + 6) % 6]
   const result = {};
-  result['0715'] = DUPLAS_BASE[(0 + off) % 6];
-  for (let dow = 1; dow <= 5; dow++) result[dow] = DUPLAS_BASE[(dow + off) % 6];
+  result['0715'] = DUPLAS_BASE[((0 - off) % 6 + 6) % 6];
+  for (let dow = 1; dow <= 5; dow++) result[dow] = DUPLAS_BASE[((dow - off) % 6 + 6) % 6];
   return result;
 }
 function getGuardiaDupla(dow, year, month) { return getDuplasForMonth(year,month)[dow] || []; }
