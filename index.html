@@ -348,35 +348,32 @@ button { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
 
 /* ── LANDING ── */
 .landing-overlay{
-  position:fixed;top:0;left:0;right:0;bottom:0;z-index:999;
-  background:linear-gradient(135deg,#00554e 0%,#003d38 40%,#1a1f3c 100%);
-  overflow-y:auto;
-  -webkit-overflow-scrolling:touch;
-  transition:opacity .5s ease, transform .5s ease;
+  position:fixed;top:0;left:0;width:100%;height:100%;z-index:999;
+  background:#00554e;
+  display:flex;align-items:center;justify-content:center;
+  transition:opacity .4s ease;
 }
+.landing-overlay.hiding{opacity:0;pointer-events:none;}
 .landing-inner{
-  min-height:100%;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  padding:40px 24px 32px;
-  position:relative;
+  display:flex;flex-direction:column;align-items:center;
+  padding:32px 20px;
+  width:100%;max-width:540px;
 }
-.landing-overlay.hiding{opacity:0;transform:scale(1.04);pointer-events:none;}
-.landing-bg{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:0;}
-.landing-bg-dot{position:absolute;border-radius:50%;opacity:.05;}
-.landing-header{text-align:center;margin-bottom:28px;animation:landingIn .7s ease both;position:relative;z-index:1;}
-.landing-logo{width:60px;height:60px;background:white;border-radius:18px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:22px;color:#00554e;margin:0 auto 16px;box-shadow:0 8px 24px rgba(0,0,0,.2);}
+.landing-bg{display:none;}
+.landing-bg-dot{display:none;}
+.landing-header{text-align:center;margin-bottom:28px;animation:landingIn .7s ease both;}
+.landing-logo{width:56px;height:56px;background:white;border-radius:16px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:20px;color:#00554e;margin:0 auto 14px;box-shadow:0 4px 20px rgba(0,0,0,.25);}
 .landing-title{color:white;font-size:clamp(1.5rem,4vw,2.2rem);font-weight:800;margin-bottom:6px;letter-spacing:-.5px;}
 .landing-sub{color:rgba(255,255,255,.55);font-size:14px;font-weight:500;}
-.landing-cards{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;max-width:540px;width:100%;margin-bottom:20px;position:relative;z-index:1;}
+.landing-cards{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;width:100%;margin-bottom:20px;}
 @media(max-width:480px){.landing-cards{grid-template-columns:1fr;}}
 .landing-card{
-  background:rgba(255,255,255,.08);
-  border:1px solid rgba(255,255,255,.15);
-  border-radius:18px;padding:18px 16px;cursor:pointer;
-  transition:.25s cubic-bezier(.34,1.56,.64,1);
+  background:rgba(255,255,255,.1);
+  border:1px solid rgba(255,255,255,.18);
+  border-radius:16px;padding:16px 14px;cursor:pointer;
+  transition:background .2s, transform .2s;
   text-align:left;position:relative;overflow:hidden;
-  animation:landingIn .7s ease both;
-  z-index:1;
+  animation:landingIn .6s ease both;
 }
 .landing-card:hover{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.25);transform:translateY(-4px) scale(1.02);box-shadow:0 16px 40px rgba(0,0,0,.25);}
 .landing-card::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,var(--lc-color,.3) 0%,transparent 60%);opacity:.15;pointer-events:none;border-radius:20px;}
@@ -385,7 +382,7 @@ button { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
 .lc-desc{color:rgba(255,255,255,.5);font-size:11px;line-height:1.5;}
 .lc-arrow{position:absolute;top:16px;right:16px;color:rgba(255,255,255,.3);font-size:16px;transition:.2s;}
 .landing-card:hover .lc-arrow{color:rgba(255,255,255,.7);transform:translate(3px,-3px);}
-.landing-footer{color:rgba(255,255,255,.25);font-size:10px;text-align:center;animation:landingIn .7s .3s ease both;position:relative;z-index:1;}
+.landing-footer{color:rgba(255,255,255,.25);font-size:10px;text-align:center;animation:landingIn .7s .3s ease both;}
 @keyframes landingIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
 </style>
 </head>
@@ -625,9 +622,6 @@ button { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
 <!-- LANDING SCREEN -->
 <div class="landing-overlay" id="landing">
   <div class="landing-inner">
-  <!-- Animated bg dots -->
-  <div class="landing-bg" id="landing-bg"></div>
-
   <div class="landing-header">
     <div class="landing-logo">JS</div>
     <h1 class="landing-title">Organización Supers</h1>
@@ -1832,32 +1826,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ── LANDING ────────────────────────────────────────────────────
-function buildLandingBg() {
-  const bg = document.getElementById('landing-bg');
-  if (!bg) return;
-  const colors = ['#00cd94','#b688ea','#f39c12','#4a537d','#00554e','white'];
-  for (let i = 0; i < 12; i++) {
-    const dot = document.createElement('div');
-    dot.className = 'landing-bg-dot';
-    const size = Math.random() * 120 + 30;
-    dot.style.cssText = `
-      width:${size}px;height:${size}px;
-      background:${colors[i % colors.length]};
-      top:${Math.random()*100}%;
-      left:${Math.random()*100}%;
-      animation:float${i%3} ${7+Math.random()*5}s ease-in-out infinite ${Math.random()*3}s;
-    `;
-    bg.appendChild(dot);
-  }
-  // Add float keyframes
-  const style = document.createElement('style');
-  style.textContent = `
-    @keyframes float0{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(15px,-20px) scale(1.05)}}
-    @keyframes float1{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(-20px,15px) scale(.95)}}
-    @keyframes float2{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(10px,20px) scale(1.08)}}
-  `;
-  document.head.appendChild(style);
-}
+function buildLandingBg() { /* removed */ }
 
 function landingGoTo(screen) {
   const overlay = document.getElementById('landing');
