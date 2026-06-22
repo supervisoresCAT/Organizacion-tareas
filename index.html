@@ -1748,6 +1748,8 @@ function phExportExcel() {
   const monthVal = document.getElementById('ph-month').value;
   const [y, m] = monthVal.split('-');
   const mes = MESES[parseInt(m)-1] + ' ' + y;
+  const diasNombre = ['','Lunes','Martes','Miércoles','Jueves','Viernes'];
+
   // Solo dias habiles lunes-viernes del mes
   let d = new Date(parseInt(y), parseInt(m)-1, 1);
   while(d.getDay()!==1) d.setDate(d.getDate()+1);
@@ -1757,13 +1759,18 @@ function phExportExcel() {
     d.setDate(d.getDate()+1);
     if(days.length>=25) break;
   }
-  const dl=['','L','M','M','J','V'];
-  // Filas
+
+  // Encabezado completo: "Lunes 6 de Julio"
+  const header = days.map(wd =>
+    diasNombre[wd.getDay()] + ' ' + wd.getDate() + ' de ' + MESES[wd.getMonth()]
+  );
+
   const rows=[
-    ['Planilla de Horarios - '+mes],
+    ['Planilla de Horarios - ' + mes],
     [],
-    ['Supervisor',...days.map(d=>dl[d.getDay()]+' '+d.getDate())]
+    ['Supervisor', ...header]
   ];
+
   phSupervisores.forEach((sup,si)=>{
     const row=[sup.n];
     days.forEach((wd,di)=>{
@@ -1771,10 +1778,11 @@ function phExportExcel() {
       if(HOLIDAYS_2026&&HOLIDAYS_2026.includes(fd)){row.push('FERIADO');return;}
       const st=document.getElementById('ph-st-'+si+'-'+di)?.innerText||'HomeOffice';
       const tm=document.getElementById('ph-tm-'+si+'-'+di)?.innerText||sup.h;
-      row.push(st==='Presencial'?tm:st==='Licencia'?'LICENCIA':'HomeOffice');
+      row.push(st==='Presencial' ? tm : st==='Licencia' ? 'LICENCIA' : 'HomeOffice');
     });
     rows.push(row);
   });
+
   rows.push([]);
   const cnt=['Presenciales'];
   days.forEach((wd,di)=>{
@@ -1784,8 +1792,13 @@ function phExportExcel() {
     cnt.push(p);
   });
   rows.push(cnt);
-  const csv='﻿'+rows.map(r=>r.map(v=>{const s=String(v??'');return s.includes(';')||s.includes('"')?'"'+s.replace(/"/g,'""')+'"':s;}).join(';')).join('
+
+  const csv='﻿'+rows.map(r=>r.map(v=>{
+    const s=String(v??'');
+    return s.includes(';')||s.includes('"') ? '"'+s.replace(/"/g,'""')+'"' : s;
+  }).join(';')).join('
 ');
+
   const a=document.createElement('a');
   a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
   a.download='Horarios_'+mes.replace(' ','_')+'.csv';
