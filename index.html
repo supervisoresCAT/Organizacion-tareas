@@ -1796,73 +1796,62 @@ function phExportExcel() {
   }
 
   const diasL=['L','M','M','J','V'];
-  const SEP = ';';
+  const rows = [];
 
-  // Header row
-  let csv = '﻿'; // BOM for Excel UTF-8
-  csv += 'Planilla de Horarios - ' + mesNombre + ' - Jerarquicos Salud
+  // Title
+  rows.push(['Planilla de Horarios - ' + mesNombre + ' - Jerarquicos Salud']);
+  rows.push([]);
 
-';
+  // Header
+  const header = ['Supervisor', ...days.map(wd => diasL[wd.getDay()-1] + ' ' + wd.getDate())];
+  rows.push(header);
 
-  // Column headers
-  csv += 'Supervisor' + SEP;
-  csv += days.map(wd => diasL[wd.getDay()-1] + ' ' + wd.getDate()).join(SEP);
-  csv += '
-';
-
-  // One row per supervisor
+  // Data
   phSupervisores.forEach((sup, sIdx) => {
-    csv += '"' + sup.n + '"' + SEP;
-    const cells = [];
+    const row = [sup.n];
     days.forEach((wd, dIdx) => {
       const fd = fmtDate(wd);
-      const isHol = HOLIDAYS_2026 && HOLIDAYS_2026.includes(fd);
-      if (isHol) { cells.push('Feriado'); return; }
-
+      if (HOLIDAYS_2026 && HOLIDAYS_2026.includes(fd)) { row.push('Feriado'); return; }
       const stEl = document.getElementById('ph-st-' + sIdx + '-' + dIdx);
       const tmEl = document.getElementById('ph-tm-' + sIdx + '-' + dIdx);
       const st = stEl ? stEl.innerText : 'HomeOffice';
       const tm = tmEl ? tmEl.innerText : sup.h;
-
-      if (st === 'Presencial') {
-        cells.push(tm);
-      } else if (st === 'Licencia') {
-        cells.push('Licencia');
-      } else {
-        cells.push('HomeOffice');
-      }
+      row.push(st === 'Presencial' ? tm : st === 'Licencia' ? 'Licencia' : 'HomeOffice');
     });
-    csv += cells.join(SEP) + '
-';
+    rows.push(row);
   });
 
-  // Blank row then presenciales count
-  csv += '
-';
-  csv += 'Presenciales' + SEP;
-  const cnts = [];
+  // Count row
+  rows.push([]);
+  const cntRow = ['Presenciales'];
   days.forEach((wd, dIdx) => {
     const fd = fmtDate(wd);
-    const isHol = HOLIDAYS_2026 && HOLIDAYS_2026.includes(fd);
-    if (isHol) { cnts.push('-'); return; }
+    if (HOLIDAYS_2026 && HOLIDAYS_2026.includes(fd)) { cntRow.push('-'); return; }
     let p = 0;
     phSupervisores.forEach((_, sIdx) => {
       const el = document.getElementById('ph-st-' + sIdx + '-' + dIdx);
       if (el && el.innerText === 'Presencial') p++;
     });
-    cnts.push(p);
+    cntRow.push(p);
   });
-  csv += cnts.join(SEP) + '
-';
+  rows.push(cntRow);
 
-  const blob = new Blob([csv], {type: 'text/csv;charset=utf-8'});
+  // Build CSV string
+  const csv = rows.map(r => r.map(c => {
+    const s = String(c);
+    return s.includes(';') || s.includes('"') || s.includes('
+') ? '"' + s.replace(/"/g,'""') + '"' : s;
+  }).join(';')).join('
+');
+
+  // Use data URI — always works, no Blob issues
+  const uri = 'data:text/csv;charset=utf-8,' + encodeURIComponent('﻿' + csv);
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
+  a.href = uri;
   a.download = 'Horarios_' + mesNombre.replace(' ', '_') + '.csv';
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(a.href), 3000);
 }
 
 // ═══════════════════════════════════════════════════════════════
