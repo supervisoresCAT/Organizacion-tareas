@@ -1080,38 +1080,6 @@ function renderRotSemanal(work, supFilter='') {
     html+=`</tbody></table></div>`;
   });
   document.getElementById('rot-content').innerHTML=html;
-
-  // Mobile card view — one card per supervisor with all days grouped by week
-  const supsToShow2 = supFilter ? SUPERVISORS.filter(s=>s===supFilter) : SUPERVISORS;
-  let cardsHtml = '<div class="rot-cards">';
-  semanas.forEach((s,si)=>{
-    cardsHtml += `<div class="section-label" style="font-size:11px;font-weight:700;color:var(--muted);padding:4px 0;text-transform:uppercase;letter-spacing:.05em;border-left:3px solid var(--impulsa);padding-left:8px;margin:8px 0 6px;">Semana ${si+1} · ${s[0].getDate()} al ${s[s.length-1].getDate()}</div>`;
-    supsToShow2.forEach(sup=>{
-      const isMe = currentSupUser && sup === currentSupUser;
-      const ini = sup.split(' ').map(p=>p[0]).slice(0,2).join('');
-      cardsHtml += `<div class="rot-card" style="${isMe?'border:2px solid var(--impulsa);':''}margin-bottom:6px;">
-        <div class="rot-card-header">
-          <span style="width:28px;height:28px;border-radius:50%;background:#dbeafe;color:#1e3a8a;font-size:9px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;">${ini}</span>
-          <div class="rot-card-name" style="margin-left:8px;">${isMe?'⭐ ':''}${sup}</div>
-        </div>
-        <div class="rot-card-days">`;
-      s.forEach(d=>{
-        if(isHoliday(d)){
-          cardsHtml+=`<div class="rot-day-item"><span class="rot-day-lbl">${DIAS_CORTO[d.getDay()]} ${d.getDate()}</span><span class="rot-day-chip" style="background:#fef3c7;color:#92400e">Fer.</span></div>`;
-          return;
-        }
-        const r=getRotRole(sup,d);
-        const fd=fmtDate(d);
-        cardsHtml+=`<div class="rot-day-item">
-          <span class="rot-day-lbl">${DIAS_CORTO[d.getDay()]} ${d.getDate()}</span>
-          <span class="rot-day-chip" style="background:${r?r.bg:'var(--bg)'};color:${r?r.fg:'var(--muted)'}" onclick="rotOpenModal('${sup}','${fd}')">${r?r.label:'—'}</span>
-        </div>`;
-      });
-      cardsHtml+=`</div></div>`;
-    });
-  });
-  cardsHtml += '</div>';
-  document.getElementById('rot-content').innerHTML += cardsHtml;
 }
 
 function renderRotResumen(work, supFilter='') {
@@ -1517,8 +1485,6 @@ function phRender(){
   phLoadSaved(document.getElementById('ph-month').value);
   phUpdateCounters();
   phRenderCards(days);
-  // Store days for re-render on toggle
-  window._phDays = days;
 }
 
 function phRenderCards(days) {
@@ -1546,15 +1512,11 @@ function phRenderCards(days) {
       const st = stEl ? stEl.innerText : 'HomeOffice';
       const tm = tmEl ? tmEl.innerText : sup.h;
       const stColors = {'HomeOffice':['#f5effd','#7c3aed'],'Presencial':['#d1fae5','#059669'],'Licencia':['#eef0f8','#4a537d']};
-      const horColors = {'07:00 a 15:00':['#fff7ed','#c2410c'],'08:00 a 16:00':['#eff6ff','#1d4ed8'],'11:00 a 19:00':['#fdf4ff','#7e22ce']};
       const [bg,fg] = stColors[st]||['#f1f5f9','#64748b'];
-      const [hbg,hfg] = horColors[tm]||['#f8fafc','#64748b'];
       html += `<div class="ph-card-day">
         <span class="ph-card-dlbl">${diasL[d.getDay()-1]}${d.getDate()}</span>
-        <span style="background:${bg};color:${fg};padding:3px 2px;border-radius:5px 5px 0 0;font-size:8px;font-weight:700;text-align:center;width:100%;display:block;cursor:pointer;"
-          onclick="phToggleSt(document.getElementById('ph-st-${sIdx}-${dIdx}'));setTimeout(()=>phRenderCards(window._phDays||[]),50)">${st==='HomeOffice'?'HO':st==='Presencial'?'Pres':'Lic'}</span>
-        <span style="background:${hbg};color:${hfg};padding:2px 1px;border-radius:0 0 5px 5px;font-size:7px;font-weight:600;text-align:center;width:100%;display:block;cursor:pointer;border-top:1px solid rgba(0,0,0,.06);"
-          onclick="phToggleTm(document.getElementById('ph-tm-${sIdx}-${dIdx}'));setTimeout(()=>phRenderCards(window._phDays||[]),50)">${tm.replace(' a ',' ')}</span>
+        <span style="background:${bg};color:${fg};padding:3px 2px;border-radius:5px;font-size:8px;font-weight:700;text-align:center;width:100%;cursor:pointer;"
+          onclick="phToggleSt(document.getElementById('ph-st-${sIdx}-${dIdx}'));phRenderCards(Array.from(document.querySelectorAll('#ph-header th')).slice(1).map((_,i)=>i))">${st==='HomeOffice'?'HO':st==='Presencial'?'Pres':'Lic'}</span>
       </div>`;
     });
     html += `</div></div>`;
