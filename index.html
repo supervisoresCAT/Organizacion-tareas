@@ -1752,9 +1752,8 @@ function phExportExcel() {
   const monthVal = document.getElementById('ph-month').value;
   const [y, m] = monthVal.split('-');
   const mes = MESES[parseInt(m)-1] + ' ' + y;
-  const diasNombre = ['','Lunes','Martes','Miercoles','Jueves','Viernes'];
+  const dn = ['','Lunes','Martes','Miercoles','Jueves','Viernes'];
 
-  // Solo lunes a viernes del mes
   let d = new Date(parseInt(y), parseInt(m)-1, 1);
   while(d.getDay()!==1) d.setDate(d.getDate()+1);
   const days=[], sm=parseInt(m)-1;
@@ -1764,53 +1763,43 @@ function phExportExcel() {
     if(days.length>=25) break;
   }
 
-  // Encabezado
-  const rows=[
-    ['Planilla de Horarios - '+mes],
-    [],
-    ['Supervisor',...days.map(wd=>diasNombre[wd.getDay()]+' '+wd.getDate()+' de '+MESES[wd.getMonth()])]
-  ];
+  const lines=[];
+  lines.push('Planilla de Horarios - '+mes);
+  lines.push('');
+  lines.push(['Supervisor',...days.map(wd=>dn[wd.getDay()]+' '+wd.getDate()+' de '+MESES[wd.getMonth()])].join(';'));
 
-  // UNA sola fila por supervisor
   phSupervisores.forEach((sup,si)=>{
-    const row=[sup.n];
+    const cells=[sup.n];
     days.forEach((wd,di)=>{
-      if(HOLIDAYS_2026&&HOLIDAYS_2026.includes(fmtDate(wd))){row.push('FERIADO');return;}
-      const stEl=document.getElementById('ph-st-'+si+'-'+di);
-      const tmEl=document.getElementById('ph-tm-'+si+'-'+di);
-      const st=stEl?stEl.innerText:'HomeOffice';
-      const tm=tmEl?tmEl.innerText:sup.h;
-      // Presencial → horario. Cualquier otro estado → HomeOffice o Licencia
-      if(st==='Presencial') row.push(tm);
-      else if(st==='Licencia') row.push('Licencia');
-      else row.push('HomeOffice');
+      if(HOLIDAYS_2026&&HOLIDAYS_2026.includes(fmtDate(wd))){cells.push('FERIADO');return;}
+      const st=document.getElementById('ph-st-'+si+'-'+di)?.innerText||'HomeOffice';
+      const tm=document.getElementById('ph-tm-'+si+'-'+di)?.innerText||sup.h;
+      cells.push(st==='Presencial'?tm:st==='Licencia'?'Licencia':'HomeOffice');
     });
-    rows.push(row);
+    lines.push(cells.join(';'));
   });
 
-  // Fila de presenciales
-  rows.push([]);
+  lines.push('');
   const cnt=['Presenciales'];
   days.forEach((wd,di)=>{
     if(HOLIDAYS_2026&&HOLIDAYS_2026.includes(fmtDate(wd))){cnt.push('-');return;}
     let p=0;
-    phSupervisores.forEach((_,si)=>{
-      if(document.getElementById('ph-st-'+si+'-'+di)?.innerText==='Presencial') p++;
-    });
+    phSupervisores.forEach((_,si)=>{if(document.getElementById('ph-st-'+si+'-'+di)?.innerText==='Presencial')p++;});
     cnt.push(p);
   });
-  rows.push(cnt);
+  lines.push(cnt.join(';'));
 
-  const csv='﻿'+rows.map(r=>r.map(v=>{
-    const s=String(v??'');
-    return s.includes(';')||s.includes('"') ? '"'+s.replace(/"/g,'""')+'"' : s;
-  }).join(';')).join('
+  // Use Blob with BOM for Excel compatibility
+  const csv = '﻿' + lines.join('
 ');
-
-  const a=document.createElement('a');
-  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-  a.download='Horarios_'+mes.replace(' ','_')+'.csv';
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'Horarios_'+mes.replace(' ','_')+'.csv';
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url), 3000);
 }
 
 // ═══════════════════════════════════════════════════════════════
