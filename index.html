@@ -1748,37 +1748,104 @@ function phExportExcel() {
   const monthVal = document.getElementById('ph-month').value;
   const [y, m] = monthVal.split('-');
   const mesNombre = MESES[parseInt(m)-1] + ' ' + y;
-  let d = new Date(parseInt(y), parseInt(m)-1, 1);
+
+  let d = new Date(y, m-1, 1);
   while(d.getDay()!==1) d.setDate(d.getDate()+1);
-  let days=[], sm=parseInt(m)-1;
-  while(d.getMonth()===sm){ if(d.getDay()>=1&&d.getDay()<=5) days.push(new Date(d)); d.setDate(d.getDate()+1); if(days.length>=25)break; }
-  const diasL=['','L','M','M','J','V'];
-  const rows=[['Planilla de Horarios - '+mesNombre+' - Jerarquicos Salud'],[],
-    ['Supervisor',...days.map(wd=>diasL[wd.getDay()]+' '+wd.getDate())]];
+  let days=[]; let startM=d.getMonth();
+  while(d.getMonth()===startM||days.length<20){
+    if(d.getDay()!==0&&d.getDay()!==6) days.push(new Date(d));
+    d.setDate(d.getDate()+1); if(days.length>=25)break;
+  }
+
+  const diasL=['L','M','M','J','V'];
+
+  // State colors for Excel (hex without #)
+  const stBg={'HomeOffice':'F5EFFD','Presencial':'D1FAE5','Licencia':'EEF0F8'};
+  const stFg={'HomeOffice':'7C3AED','Presencial':'059669','Licencia':'4A537D'};
+  const hBg={'07:00 a 15:00':'FFF7ED','08:00 a 16:00':'EFF6FF','11:00 a 19:00':'FDF4FF'};
+  const hFg={'07:00 a 15:00':'C2410C','08:00 a 16:00':'1D4ED8','11:00 a 19:00':'7E22CE'};
+
+  function xmlCol(bg, fg, bold, text, wrap) {
+    return `<Cell ss:StyleID="s${bg}${bold?'B':''}"><Data ss:Type="String">${text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</Data></Cell>`;
+  }
+
+  // Build styles
+  let styles = `
+    <Style ss:ID="header"><Font ss:Bold="1" ss:Color="#FFFFFF"/><Interior ss:Color="#4A537D" ss:Pattern="Solid"/><Alignment ss:Horizontal="Center" ss:Vertical="Center" ss:WrapText="1"/></Style>
+    <Style ss:ID="supName"><Font ss:Bold="1" ss:Color="#00554E"/><Alignment ss:Vertical="Center"/></Style>
+    <Style ss:ID="even"><Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/><Alignment ss:Horizontal="Center" ss:Vertical="Center" ss:WrapText="1"/></Style>
+    <Style ss:ID="odd"><Interior ss:Color="#FAFBFC" ss:Pattern="Solid"/><Alignment ss:Horizontal="Center" ss:Vertical="Center" ss:WrapText="1"/></Style>
+    <Style ss:ID="cntGreen"><Interior ss:Color="#D1FAE5" ss:Pattern="Solid"/><Font ss:Bold="1" ss:Color="#065F46"/><Alignment ss:Horizontal="Center" ss:Vertical="Center"/></Style>
+    <Style ss:ID="cntRed"><Interior ss:Color="#FDEAEA" ss:Pattern="Solid"/><Font ss:Bold="1" ss:Color="#991B1B"/><Alignment ss:Horizontal="Center" ss:Vertical="Center"/></Style>
+    <Style ss:ID="sHome"><Interior ss:Color="#F5EFFD" ss:Pattern="Solid"/><Font ss:Color="#7C3AED" ss:Bold="1"/><Alignment ss:Horizontal="Center" ss:Vertical="Center" ss:WrapText="1"/></Style>
+    <Style ss:ID="sPres"><Interior ss:Color="#D1FAE5" ss:Pattern="Solid"/><Font ss:Color="#059669" ss:Bold="1"/><Alignment ss:Horizontal="Center" ss:Vertical="Center" ss:WrapText="1"/></Style>
+    <Style ss:ID="sLic"><Interior ss:Color="#EEF0F8" ss:Pattern="Solid"/><Font ss:Color="#4A537D" ss:Bold="1"/><Alignment ss:Horizontal="Center" ss:Vertical="Center" ss:WrapText="1"/></Style>
+    <Style ss:ID="h715"><Interior ss:Color="#FFF7ED" ss:Pattern="Solid"/><Font ss:Color="#C2410C"/><Alignment ss:Horizontal="Center" ss:Vertical="Center" ss:WrapText="1"/></Style>
+    <Style ss:ID="h816"><Interior ss:Color="#EFF6FF" ss:Pattern="Solid"/><Font ss:Color="#1D4ED8"/><Alignment ss:Horizontal="Center" ss:Vertical="Center" ss:WrapText="1"/></Style>
+    <Style ss:ID="h1119"><Interior ss:Color="#FDF4FF" ss:Pattern="Solid"/><Font ss:Color="#7E22CE"/><Alignment ss:Horizontal="Center" ss:Vertical="Center" ss:WrapText="1"/></Style>
+    <Style ss:ID="title"><Font ss:Bold="1" ss:Size="14" ss:Color="#4A537D"/></Style>
+    <Style ss:ID="cnt"><Interior ss:Color="#F1F5F9" ss:Pattern="Solid"/><Font ss:Bold="1" ss:Color="#64748B"/><Alignment ss:Horizontal="Center" ss:Vertical="Center"/></Style>`;
+
+  const stStyleMap={'HomeOffice':'sHome','Presencial':'sPres','Licencia':'sLic'};
+  const hStyleMap={'07:00 a 15:00':'h715','08:00 a 16:00':'h816','11:00 a 19:00':'h1119'};
+
+  // Header row
+  let headerRow = `<Row ss:Height="36"><Cell ss:StyleID="header"><Data ss:Type="String">Supervisor</Data></Cell>`;
+  days.forEach(wd=>{
+    headerRow += `<Cell ss:StyleID="header"><Data ss:Type="String">${diasL[wd.getDay()-1]} ${wd.getDate()}</Data></Cell>`;
+  });
+  headerRow += `</Row>`;
+
+  // Data rows — each supervisor = 2 rows (estado + horario)
+  let dataRows='';
   phSupervisores.forEach((sup,sIdx)=>{
-    const row=[sup.n];
-    days.forEach((wd,dIdx)=>{
-      const fd=fmtDate(wd);
-      if(HOLIDAYS_2026&&HOLIDAYS_2026.includes(fd)){row.push('FERIADO');return;}
-      const st=document.getElementById('ph-st-'+sIdx+'-'+dIdx)?.innerText||'HomeOffice';
-      const tm=document.getElementById('ph-tm-'+sIdx+'-'+dIdx)?.innerText||sup.h;
-      row.push(st==='Presencial'?tm:st==='Licencia'?'LICENCIA':'HomeOffice');
+    const rowStyle=sIdx%2===0?'even':'odd';
+    // Row 1: Estado
+    let row1=`<Row ss:Height="22"><Cell ss:StyleID="supName" ss:MergeDown="1"><Data ss:Type="String">${sup.n}</Data></Cell>`;
+    let row2=`<Row ss:Height="18">`;
+    days.forEach((_,di)=>{
+      const stEl=document.getElementById(`ph-st-${sIdx}-${di}`);
+      const tmEl=document.getElementById(`ph-tm-${sIdx}-${di}`);
+      const st=stEl?stEl.innerText:'HomeOffice';
+      const tm=tmEl?tmEl.innerText:sup.h;
+      row1+=`<Cell ss:StyleID="${stStyleMap[st]||rowStyle}"><Data ss:Type="String">${st}</Data></Cell>`;
+      row2+=`<Cell ss:StyleID="${hStyleMap[tm]||rowStyle}"><Data ss:Type="String">${tm}</Data></Cell>`;
     });
-    rows.push(row);
+    row1+=`</Row>`;row2+=`</Row>`;
+    dataRows+=row1+row2;
   });
-  rows.push([]);
-  const cnt=['Presenciales'];
-  days.forEach((wd,dIdx)=>{
-    const fd=fmtDate(wd);
-    if(HOLIDAYS_2026&&HOLIDAYS_2026.includes(fd)){cnt.push('-');return;}
-    let p=0; phSupervisores.forEach((_,sIdx)=>{if(document.getElementById('ph-st-'+sIdx+'-'+dIdx)?.innerText==='Presencial')p++;});
-    cnt.push(p);
+
+  // Count row
+  let cntRow=`<Row ss:Height="22"><Cell ss:StyleID="cnt"><Data ss:Type="String">Presenciales</Data></Cell>`;
+  days.forEach((_,di)=>{
+    let p=0; phSupervisores.forEach((_2,sIdx)=>{ const el=document.getElementById(`ph-st-${sIdx}-${di}`); if(el&&el.innerText==='Presencial')p++; });
+    cntRow+=`<Cell ss:StyleID="${p>=6?'cntGreen':'cntRed'}"><Data ss:Type="Number">${p}</Data></Cell>`;
   });
-  rows.push(cnt);
-  const csv='﻿'+rows.map(r=>r.map(c=>{const s=String(c??'');return s.includes(';')||s.includes('"')?'"'+s.replace(/"/g,'""')+'"':s;}).join(';')).join('
-');
-  const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-  a.download='Horarios_'+mesNombre.replace(' ','_')+'.csv';document.body.appendChild(a);a.click();document.body.removeChild(a);
+  cntRow+=`</Row>`;
+
+  const xml=`<?xml version="1.0"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+  xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+  <Styles>${styles}</Styles>
+  <Worksheet ss:Name="${mesNombre}">
+    <Table>
+      <Row ss:Height="30"><Cell ss:StyleID="title"><Data ss:Type="String">Planilla de Horarios — ${mesNombre} — Jerárquicos Salud</Data></Cell></Row>
+      <Row ss:Height="6"/>
+      ${headerRow}
+      ${dataRows}
+      <Row ss:Height="6"/>
+      ${cntRow}
+    </Table>
+  </Worksheet>
+</Workbook>`;
+
+  const blob=new Blob([xml],{type:'application/vnd.ms-excel;charset=utf-8'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`Horarios_${mesNombre.replace(' ','_')}.xls`;
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),3000);
 }
 
 // ═══════════════════════════════════════════════════════════════
