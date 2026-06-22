@@ -1751,21 +1751,27 @@ function phExportExcel() {
   const [y, m] = monthVal.split('-');
   const mesNombre = MESES[parseInt(m)-1] + ' ' + y;
 
-  // Build days array
-  let d = new Date(y, m-1, 1);
+  // Build days - ONLY weekdays (Mon-Fri), no Saturdays
+  let d = new Date(parseInt(y), parseInt(m)-1, 1);
   while(d.getDay()!==1) d.setDate(d.getDate()+1);
   let days=[];
-  while(d.getMonth()===(parseInt(m)-1)||days.length<20){
-    if(d.getDay()!==0&&d.getDay()!==6) days.push(new Date(d));
+  const startMonth = parseInt(m)-1;
+  while(d.getMonth()===startMonth){
+    const dow = d.getDay();
+    if(dow>=1 && dow<=5) days.push(new Date(d)); // Mon-Fri only
     d.setDate(d.getDate()+1);
     if(days.length>=25) break;
   }
 
-  const diasL=['L','M','M','J','V'];
+  const diasL=['','L','M','M','J','V'];
   const rows = [];
 
-  // Header row: Supervisor + one column per day
-  rows.push(['Supervisor', ...days.map(wd => diasL[wd.getDay()-1]+' '+wd.getDate())]);
+  // Title
+  rows.push(['Planilla de Horarios — ' + mesNombre + ' — Jerárquicos Salud']);
+  rows.push([]);
+
+  // Header: Supervisor + day labels (e.g. "L 6", "M 7"...)
+  rows.push(['Supervisor', ...days.map(wd => diasL[wd.getDay()] + ' ' + wd.getDate())]);
 
   // One row per supervisor
   phSupervisores.forEach((sup, sIdx) => {
@@ -1773,19 +1779,20 @@ function phExportExcel() {
     days.forEach((wd, dIdx) => {
       const fd = fmtDate(wd);
       if (HOLIDAYS_2026 && HOLIDAYS_2026.includes(fd)) {
-        row.push('FERIADO');
-        return;
+        row.push('FERIADO'); return;
       }
       const stEl = document.getElementById('ph-st-' + sIdx + '-' + dIdx);
       const tmEl = document.getElementById('ph-tm-' + sIdx + '-' + dIdx);
       const st = stEl ? stEl.innerText : 'HomeOffice';
       const tm = tmEl ? tmEl.innerText : sup.h;
-      row.push(st === 'Presencial' ? tm : st === 'Licencia' ? 'LICENCIA' : 'HOMEOFFICE');
+      if (st === 'Presencial') row.push(tm);
+      else if (st === 'Licencia') row.push('LICENCIA');
+      else row.push('HomeOffice');
     });
     rows.push(row);
   });
 
-  // Blank row + presenciales count
+  // Blank + presenciales count
   rows.push([]);
   const cntRow = ['Presenciales'];
   days.forEach((wd, dIdx) => {
@@ -1800,23 +1807,20 @@ function phExportExcel() {
   });
   rows.push(cntRow);
 
-  // Build CSV with semicolons
+  // CSV with semicolons
   const csv = '﻿' + rows.map(r =>
     r.map(c => {
-      const s = String(c === null || c === undefined ? '' : c);
-      return s.includes(';') || s.includes('"') ? '"' + s.replace(/"/g, '""') + '"' : s;
+      const s = String(c == null ? '' : c);
+      return s.includes(';') || s.includes('"') ? '"' + s.replace(/"/g,'""') + '"' : s;
     }).join(';')
   ).join('
 ');
 
-  // Download
   const uri = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
   const a = document.createElement('a');
   a.href = uri;
-  a.download = 'Horarios_' + mesNombre.replace(' ', '_') + '.csv';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+  a.download = 'Horarios_' + mesNombre.replace(' ','_') + '.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
 }
 
 // ═══════════════════════════════════════════════════════════════
