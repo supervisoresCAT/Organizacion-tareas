@@ -932,13 +932,27 @@ function buildRotCal(year, month) {
       const grupo=getGrupo(rid);
       if(grupo){const ng=cands.filter(s=>(consecGrupo[s][grupo]||0)<MAX_CONSEC_GRUPO);if(ng.length)cands=ng;}
       if(rid==='des7076'||rid==='r7076des'){const sp=cands.filter(s=>(dayIdx-lastDes[s][rid])>=COOLDOWN);if(sp.length)cands=sp;}
+      // Regla 07-15: no pueden tener r7076des; en des7076 tienen cap fijo de 6
+      if(rid==='r7076des'){const nr=cands.filter(s=>!SUPS_0715.includes(s));if(nr.length)cands=nr;}
+      if(rid==='des7076'){
+        // forzar que 07-15 lleguen a 6; frenarlos si ya tienen 6
+        const s0715enPool=cands.filter(s=>SUPS_0715.includes(s));
+        const otros=cands.filter(s=>!SUPS_0715.includes(s));
+        // si alguno de 07-15 tiene menos de 6 y quedan dias, priorizarlos
+        const need0715=s0715enPool.filter(s=>mc[s][rid]<6&&daysLeft<=(6-mc[s][rid])*2+2);
+        if(need0715.length){cands=need0715;}
+        else{
+          // frenar a 07-15 si ya llegaron a 6
+          const cap6=cands.filter(s=>!(SUPS_0715.includes(s)&&mc[s][rid]>=6));
+          if(cap6.length)cands=cap6;
+        }
+      }
       const cap=monthlyCap(rid,wdCount);
       if(cap<999){const uc=cands.filter(s=>mc[s][rid]<cap);if(uc.length)cands=uc;}
       // Cap equitativo: usar minimo GLOBAL (todos los sups) para no penalizar a quien estuvo de guardia
       const globalMin=Math.min(...SUPERVISORS.map(s=>mc[s][rid]));
       const globalMax=Math.max(...SUPERVISORS.map(s=>mc[s][rid]));
       if(globalMax>globalMin){
-        // Si hay desbalance, frena a quien ya supero el minimo global+1
         const eq=cands.filter(s=>mc[s][rid]<=globalMin+1);
         if(eq.length)cands=eq;
       }
