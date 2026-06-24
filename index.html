@@ -946,16 +946,20 @@ function buildRotCal(year, month) {
       }
       const cap=monthlyCap(rid,wdCount);
       if(cap<999){const uc=cands.filter(s=>mc[s][rid]<cap);if(uc.length)cands=uc;}
-      // Cap equitativo: usar minimo GLOBAL (todos los sups) para no penalizar a quien estuvo de guardia
-      const globalMin=Math.min(...SUPERVISORS.map(s=>mc[s][rid]));
-      const globalMax=Math.max(...SUPERVISORS.map(s=>mc[s][rid]));
-      if(globalMax>globalMin){
-        const eq=cands.filter(s=>mc[s][rid]<=globalMin+1);
-        if(eq.length)cands=eq;
+      // Equidad: calcular min/max solo entre candidatos elegibles para este rol
+      // (excluir a 07-15 de r7076des y del calculo de des7076 una vez que llegan a 6)
+      if(cands.length>1){
+        const minCands=Math.min(...cands.map(s=>mc[s][rid]));
+        const maxCands=Math.max(...cands.map(s=>mc[s][rid]));
+        if(maxCands>minCands){
+          // frena a quien ya tiene mas que el minimo+1 dentro del pool elegible
+          const eq=cands.filter(s=>mc[s][rid]<=minCands+1);
+          if(eq.length)cands=eq;
+        }
       }
-      // Prioridad dura sobre candidatos: primero quien tenga menos del rol (criterio primario)
+      // Sort primario: menor conteo del rol primero; desempate por deuda global
       cands.sort((a,b)=>{
-        const diffRol=mc[a][rid]-mc[b][rid]; // menor cantidad primero
+        const diffRol=mc[a][rid]-mc[b][rid];
         if(diffRol!==0)return diffRol;
         const dr=roleDeuda[b][rid]-roleDeuda[a][rid];
         if(dr!==0)return dr;
