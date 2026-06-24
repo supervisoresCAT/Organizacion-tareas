@@ -838,8 +838,9 @@ const ROLES = [
 ];
 const ALL_TASK_ROLES = ['bandeja','kh','entrena','r7076','solo7076','des7076','r7076des'];
 const ANTI_CONSEC_ROLES = new Set(ALL_TASK_ROLES);
-const GRUPO_TAREAS = new Set(['bandeja','kh','entrena']);
-const GRUPO_LINEA  = new Set(['r7076','solo7076','des7076','r7076des']);
+const GRUPO_TAREAS  = new Set(['bandeja','kh','entrena']);
+const GRUPO_LINEA   = new Set(['r7076','solo7076']);
+const GRUPO_DESLOG  = new Set(['des7076','r7076des']);
 const MAX_CONSEC_ROL_MAP = {'des7076':2,'r7076des':2,'solo7076':1,'r7076':1,'bandeja':1,'kh':1,'entrena':1};
 const MAX_CONSEC_GRUPO = 1;
 const SUPS_0715 = ['Lumila Perri','David Leiva'];
@@ -866,7 +867,7 @@ function getDuplasForMonth(year, month) {
 }
 function getGuardiaDupla(dow, year, month) { return getDuplasForMonth(year,month)[dow] || []; }
 function getDupla0715(year, month) { return getDuplasForMonth(year,month)['0715'] || []; }
-function getGrupo(rid) { if(GRUPO_TAREAS.has(rid))return'tareas'; if(GRUPO_LINEA.has(rid))return'linea'; return null; }
+function getGrupo(rid) { if(GRUPO_TAREAS.has(rid))return'tareas'; if(GRUPO_LINEA.has(rid))return'linea'; if(GRUPO_DESLOG.has(rid))return'deslog'; return null; }
 
 function monthlyCap(rid, wdCount) {
   if (rid==='r7076des') return Math.ceil((wdCount*2)/12);
@@ -909,7 +910,7 @@ function buildRotCal(year, month) {
   const workdays = getWorkDays(year, month).filter(d=>!isHoliday(d));
   const wdCount  = workdays.length;
   const mc = {}; const consec = {}; const consecGrupo = {};
-  SUPERVISORS.forEach(s=>{mc[s]={};consec[s]={};consecGrupo[s]={tareas:0,linea:0};ALL_TASK_ROLES.forEach(r=>{mc[s][r]=0;consec[s][r]=0;});});
+  SUPERVISORS.forEach(s=>{mc[s]={};consec[s]={};consecGrupo[s]={tareas:0,linea:0,deslog:0};ALL_TASK_ROLES.forEach(r=>{mc[s][r]=0;consec[s][r]=0;});});
   const lastDes = {}; const COOLDOWN = 3;
   SUPERVISORS.forEach(s=>{lastDes[s]={};ALL_TASK_ROLES.forEach(r=>lastDes[s][r]=-99);});
   const roleDeuda = {}; SUPERVISORS.forEach(s=>{roleDeuda[s]={};ALL_TASK_ROLES.forEach(r=>roleDeuda[s][r]=SUPS_0715.includes(s)?2:0);});
@@ -932,6 +933,8 @@ function buildRotCal(year, month) {
       if(ANTI_CONSEC_ROLES.has(rid)){const maxC=MAX_CONSEC_ROL_MAP[rid]||1;const nc=cands.filter(s=>(consec[s][rid]||0)<maxC);if(nc.length)cands=nc;}
       const grupo=getGrupo(rid);
       if(grupo){const ng=cands.filter(s=>(consecGrupo[s][grupo]||0)<MAX_CONSEC_GRUPO);if(ng.length)cands=ng;}
+      // Ademas frenar si lleva 2+ dias en cualquier grupo de linea (linea+deslog juntos)
+      if(grupo==='linea'||grupo==='deslog'){const nl=cands.filter(s=>((consecGrupo[s].linea||0)+(consecGrupo[s].deslog||0))<2);if(nl.length)cands=nl;}
       if(rid==='des7076'||rid==='r7076des'){const sp=cands.filter(s=>(dayIdx-lastDes[s][rid])>=COOLDOWN);if(sp.length)cands=sp;}
       // Regla 07-15: no pueden tener r7076des; en des7076 tienen cap fijo de 6
       if(rid==='r7076des'){const nr=cands.filter(s=>!SUPS_0715.includes(s));if(nr.length)cands=nr;}
@@ -977,10 +980,11 @@ function buildRotCal(year, month) {
       if(!isG&&role){ALL_TASK_ROLES.forEach(r=>{roleDeuda[s][r]=role===r?roleDeuda[s][r]-(ALL_TASK_ROLES.length-1):roleDeuda[s][r]+1;});}
       ALL_TASK_ROLES.forEach(r=>{consec[s][r]=(role===r)?(consec[s][r]||0)+1:0;});
       const gh=getGrupo(role);
-      // Guardia no resetea consecutivos de grupo — solo una tarea del grupo opuesto los resetea
-      if(gh==='tareas'){consecGrupo[s].tareas=(consecGrupo[s].tareas||0)+1;consecGrupo[s].linea=0;}
-      else if(gh==='linea'){consecGrupo[s].linea=(consecGrupo[s].linea||0)+1;consecGrupo[s].tareas=0;}
-      // si guardia o sin tarea: los contadores quedan como estaban (no se resetean)
+      // Guardia no resetea consecutivos de grupo — solo una tarea de grupo diferente los resetea
+      if(gh==='tareas'){consecGrupo[s].tareas=(consecGrupo[s].tareas||0)+1;consecGrupo[s].linea=0;consecGrupo[s].deslog=0;}
+      else if(gh==='linea'){consecGrupo[s].linea=(consecGrupo[s].linea||0)+1;consecGrupo[s].tareas=0;consecGrupo[s].deslog=0;}
+      else if(gh==='deslog'){consecGrupo[s].deslog=(consecGrupo[s].deslog||0)+1;consecGrupo[s].tareas=0;consecGrupo[s].linea=0;}
+      // si guardia: los contadores quedan como estaban (no se resetean)
     });
     calendar[fd]=dayAssign;
   });
@@ -1161,13 +1165,13 @@ function renderRotAlerts(work) {
         if(getRotRole(sup,d)?.id===rid){consec++;const maxC=MAX_CONSEC_ROL_MAP[rid]||1;if(consec>maxC)issues.push(`<b>${sup.split(' ')[0]}</b>: ${consec} días seguidos de ${ROLES.find(r=>r.id===rid)?.label}`);}        else consec=0;
       });
     });
-    ['tareas','linea'].forEach(grupo=>{
+    ['tareas','linea','deslog'].forEach(grupo=>{
       let consec=0;
       days.forEach(d=>{
         const rid=getRotRole(sup,d)?.id;
-        const g=(GRUPO_TAREAS.has(rid)?'tareas':GRUPO_LINEA.has(rid)?'linea':null);
+        const g=(GRUPO_TAREAS.has(rid)?'tareas':GRUPO_LINEA.has(rid)?'linea':GRUPO_DESLOG.has(rid)?'deslog':null);
         if(g===grupo){consec++;if(consec>MAX_CONSEC_GRUPO)issues.push(`<b>${sup.split(' ')[0]}</b>: ${consec} días seguidos en grupo ${grupo.toUpperCase()}`);}
-        else if(g!==grupo)consec=0;
+        else if(g!==null)consec=0;
       });
     });
   });
