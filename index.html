@@ -977,8 +977,10 @@ function buildRotCal(year, month) {
       if(!isG&&role){ALL_TASK_ROLES.forEach(r=>{roleDeuda[s][r]=role===r?roleDeuda[s][r]-(ALL_TASK_ROLES.length-1):roleDeuda[s][r]+1;});}
       ALL_TASK_ROLES.forEach(r=>{consec[s][r]=(role===r)?(consec[s][r]||0)+1:0;});
       const gh=getGrupo(role);
-      consecGrupo[s].tareas=(gh==='tareas')?(consecGrupo[s].tareas||0)+1:0;
-      consecGrupo[s].linea=(gh==='linea')?(consecGrupo[s].linea||0)+1:0;
+      // Guardia no resetea consecutivos de grupo — solo una tarea del grupo opuesto los resetea
+      if(gh==='tareas'){consecGrupo[s].tareas=(consecGrupo[s].tareas||0)+1;consecGrupo[s].linea=0;}
+      else if(gh==='linea'){consecGrupo[s].linea=(consecGrupo[s].linea||0)+1;consecGrupo[s].tareas=0;}
+      // si guardia o sin tarea: los contadores quedan como estaban (no se resetean)
     });
     calendar[fd]=dayAssign;
   });
