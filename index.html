@@ -294,7 +294,7 @@ body{font-family:'Inter','Segoe UI',sans-serif;background:var(--bg);color:var(--
 .colab-notas{width:100%;min-height:70px;border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;font-family:inherit;font-size:12px;color:var(--text);resize:vertical;background:white;}
 
 /* ══════════════════════════════════════
-   SECCIÓN: EQUIPO DE ENTRENA2 2026
+   SECCIÓN: EQUIPO DE Entrena2
 ══════════════════════════════════════ */
 .eq-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
 .eq-search{width:100%;max-width:280px;padding:8px 12px;border:2px solid var(--border);border-radius:9px;font-family:inherit;font-size:12.5px;color:var(--text);background:white;outline:none;}
@@ -663,7 +663,7 @@ document.getElementById('p').addEventListener('keydown', evt => { if(evt.key==='
     </div>
     <div class="landing-card landing-card-snake" style="--lc-color:#ec4899;" onclick="landingGoTo('equipos')" style="animation-delay:.35s">
       <span class="lc-icon">🧑‍🤝‍🧑</span>
-      <div class="lc-title">Equipo de Entrena2 2026</div>
+      <div class="lc-title">Equipos de Entrena2</div>
       <div class="lc-desc">Supervisores y sus integrantes de equipo</div>
       <span class="lc-arrow">↗</span>
     </div>
@@ -705,7 +705,7 @@ document.getElementById('p').addEventListener('keydown', evt => { if(evt.key==='
       <span class="ni-icon">📋</span> Tareas Colaboradores
     </button>
     <button class="nav-item" onclick="goTo('equipos')" id="nav-equipos">
-      <span class="ni-icon">🧑‍🤝‍🧑</span> Equipo Entrena2 2026
+      <span class="ni-icon">🧑‍🤝‍🧑</span> Equipo Entrena2
     </button>
     <div class="sb-section" style="margin-top:8px;">Seguridad</div>
     <button class="nav-item" onclick="exportBackup()" style="color:#fcd34d;">
@@ -946,7 +946,7 @@ document.getElementById('p').addEventListener('keydown', evt => { if(evt.key==='
     <div class="screen" id="screen-equipos">
       <div class="card">
         <div class="card-header">
-          <h2>Equipo de Entrena2 2026</h2>
+          <h2>Equipos de Entrena2</h2>
           <div class="eq-toolbar">
             <input type="text" class="eq-search" id="eq-search" placeholder="🔎 Buscar supervisor o integrante..." oninput="eqRender()">
             <span class="eq-count" id="eq-count"></span>
@@ -1051,9 +1051,9 @@ const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto'
 const DIAS_CORTO = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
 
 // ═══════════════════════════════════════════════════════════════
-// EQUIPO DE ENTRENA2 2026
+// EQUIPO DE Entrena2
 // ═══════════════════════════════════════════════════════════════
-const ENTRENA2_TEAMS = {
+const Entrena2_TEAMS = {
   'Lumila Perri': ['Melina Pérez','Gianfranco Gallini','Federico Dayer','Valentina Rodriguez','Yenit Culcuy','Romina Benelli','Agostina Almiron','Ivana Cosimano','Lorena Zeballos'],
   'Ximena Epelbaum': ['Catalina Unno','Andrea Ziganorsky','Milagros Masjoan','Laura Gottig','Joaquín Gaitán','Maykon Maciel','Ignacio Castillo','Valeria Claussen','Alan Chantiri','Sofía Faccioli'],
   'Jesica Carrasco': ['Mateo Ocanto','Agostina Villarreal','Sebastián Riquelme','Flavia Barduca','Giuliana Menotti','Santiago Lanteri','Lorenzo García','Carolina Ayala','Paula Pascuale','Gisela Alvado'],
@@ -1087,7 +1087,7 @@ function eqRender() {
   grid.innerHTML = '';
   let visibleTeams = 0, totalIntegrantes = 0;
 
-  Object.entries(ENTRENA2_TEAMS).forEach(([sup, integrantes]) => {
+  Object.entries(Entrena2_TEAMS).forEach(([sup, integrantes]) => {
     const supMatch = sup.toLowerCase().includes(q);
     const membersFiltered = integrantes.filter(n => supMatch || n.toLowerCase().includes(q));
     if (q && membersFiltered.length === 0) return;
@@ -1116,8 +1116,8 @@ function eqRender() {
 
   empty.style.display = visibleTeams === 0 ? 'block' : 'none';
   countEl.textContent = q
-    ? `${visibleTeams} de ${Object.keys(ENTRENA2_TEAMS).length} equipos`
-    : `${Object.keys(ENTRENA2_TEAMS).length} equipos · ${totalIntegrantes} integrantes`;
+    ? `${visibleTeams} de ${Object.keys(Entrena2_TEAMS).length} equipos`
+    : `${Object.keys(Entrena2_TEAMS).length} equipos · ${totalIntegrantes} integrantes`;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1129,7 +1129,7 @@ const SCREENS = {
   sabados:  {title:'Guardias Sábados', sub:'Planificación anual de guardias'},
   horarios: {title:'Planilla de Horarios', sub:'Gestión mensual de presencialidad'},
   colaboradores: {title:'Tareas Colaboradores', sub:'Distribución mensual por área'},
-  equipos: {title:'Equipo de Entrena2 2026', sub:'Supervisores e integrantes de equipo'},
+  equipos: {title:'Equipo de Entrena2', sub:'Supervisores e integrantes de equipo'},
 };
 let currentScreen = 'rotacion';
 
