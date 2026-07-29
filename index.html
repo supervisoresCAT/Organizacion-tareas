@@ -294,6 +294,29 @@ body{font-family:'Inter','Segoe UI',sans-serif;background:var(--bg);color:var(--
 .colab-notas{width:100%;min-height:70px;border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;font-family:inherit;font-size:12px;color:var(--text);resize:vertical;background:white;}
 
 /* ══════════════════════════════════════
+   SECCIÓN: EQUIPO DE ENTRENA2 2026
+══════════════════════════════════════ */
+.eq-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.eq-search{width:100%;max-width:280px;padding:8px 12px;border:2px solid var(--border);border-radius:9px;font-family:inherit;font-size:12.5px;color:var(--text);background:white;outline:none;}
+.eq-search:focus{border-color:#ec4899;}
+.eq-count{font-size:11px;font-weight:700;color:var(--muted);white-space:nowrap;}
+.eq-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:14px;margin-top:16px;}
+.eq-card{background:white;border-radius:var(--radius-lg);box-shadow:var(--shadow);overflow:hidden;border-top:4px solid #ec4899;display:flex;flex-direction:column;}
+.eq-card.eq-hidden{display:none;}
+.eq-card-head{padding:14px 16px;background:#fce7f3;border-bottom:1px solid var(--border);}
+[data-theme="dark"] .eq-card-head{background:#2d1a26;}
+.eq-card-sup{font-size:13.5px;font-weight:800;color:#831843;}
+[data-theme="dark"] .eq-card-sup{color:#f9a8d4;}
+.eq-card-count{font-size:10px;font-weight:700;color:#be185d;text-transform:uppercase;letter-spacing:.04em;margin-top:2px;}
+.eq-card-body{padding:8px 16px 12px;flex:1;}
+.eq-member{padding:6px 0;font-size:12.5px;color:var(--text);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:9px;}
+.eq-member:last-child{border-bottom:none;}
+.eq-member.eq-hidden{display:none;}
+.eq-member-num{width:19px;height:19px;border-radius:50%;background:var(--elite-lt);color:var(--elite);font-size:9.5px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.eq-member-name.hl{background:#fef08a;border-radius:4px;padding:0 2px;}
+.eq-empty{text-align:center;padding:30px;color:var(--muted);font-size:13px;}
+
+/* ══════════════════════════════════════
    SECCIÓN 4: PLANILLA HORARIOS
 ══════════════════════════════════════ */
 .ph-wrap{overflow:auto;max-height:70vh;border-radius:var(--radius-lg);box-shadow:var(--shadow);}
@@ -605,6 +628,12 @@ button { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
       <div class="lc-desc">Distribución mensual de auxiliares por área</div>
       <span class="lc-arrow">↗</span>
     </div>
+    <div class="landing-card landing-card-snake" style="--lc-color:#ec4899;" onclick="landingGoTo('equipos')" style="animation-delay:.35s">
+      <span class="lc-icon">🧑‍🤝‍🧑</span>
+      <div class="lc-title">Equipo de Entrena2 2026</div>
+      <div class="lc-desc">Supervisores y sus integrantes de equipo</div>
+      <span class="lc-arrow">↗</span>
+    </div>
   </div>
 
   <div class="landing-footer">Hacé clic en cualquier sección para comenzar</div>
@@ -641,6 +670,9 @@ button { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
     </button>
     <button class="nav-item" onclick="goTo('colaboradores')" id="nav-colaboradores">
       <span class="ni-icon">📋</span> Tareas Colaboradores
+    </button>
+    <button class="nav-item" onclick="goTo('equipos')" id="nav-equipos">
+      <span class="ni-icon">🧑‍🤝‍🧑</span> Equipo Entrena2 2026
     </button>
     <div class="sb-section" style="margin-top:8px;">Seguridad</div>
     <button class="nav-item" onclick="exportBackup()" style="color:#fcd34d;">
@@ -877,6 +909,22 @@ button { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
       </div>
     </div>
 
+    <div class="screen" id="screen-equipos">
+      <div class="card">
+        <div class="card-header">
+          <h2>Equipo de Entrena2 2026</h2>
+          <div class="eq-toolbar">
+            <input type="text" class="eq-search" id="eq-search" placeholder="🔎 Buscar supervisor o integrante..." oninput="eqRender()">
+            <span class="eq-count" id="eq-count"></span>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="eq-grid" id="eq-grid"></div>
+          <div class="eq-empty" id="eq-empty" style="display:none;">No se encontraron resultados</div>
+        </div>
+      </div>
+    </div>
+
   </div><!-- /content -->
 </div><!-- /main -->
 
@@ -969,6 +1017,76 @@ const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto'
 const DIAS_CORTO = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
 
 // ═══════════════════════════════════════════════════════════════
+// EQUIPO DE ENTRENA2 2026
+// ═══════════════════════════════════════════════════════════════
+const ENTRENA2_TEAMS = {
+  'Lumila Perri': ['Melina Pérez','Gianfranco Gallini','Federico Dayer','Valentina Rodriguez','Yenit Culcuy','Romina Benelli','Agostina Almiron','Ivana Cosimano','Lorena Zeballos'],
+  'Ximena Epelbaum': ['Catalina Unno','Andrea Ziganorsky','Milagros Masjoan','Laura Gottig','Joaquín Gaitán','Maykon Maciel','Ignacio Castillo','Valeria Claussen','Alan Chantiri','Sofía Faccioli'],
+  'Jesica Carrasco': ['Mateo Ocanto','Agostina Villarreal','Sebastián Riquelme','Flavia Barduca','Giuliana Menotti','Santiago Lanteri','Lorenzo García','Carolina Ayala','Paula Pascuale','Gisela Alvado'],
+  'Fabricio Figueroa': ['Alexis Gómez','Victoria Gálvez','Juan Pablo Fernández','Yamile Mourello','Macarena Redigonda','Maira Andreu','Ximena Romero','Fabricio Maggi','Priscila Romero','Nicolás Jovellano'],
+  'Alejandra Sosa': ['Eugenia Navarro','Melisa Fazzino','Solana Laperchia','Germán Perri','Nicolás Fernández','Jesica Grassi','Cecilia Aguilar','Caterina Dandrea','Natalia Bode','Sheila Ruiz Díaz'],
+  'Martin Paravan': ['Flavia Schmidt','Alejandro Schiavetti','Abril Cámara','Giuliana Beltramo','Karin Schmidalter','Marco Sozio','Bruno Prieto','Nicolás Payero','Fausto Patiño','Tatiana Rivolta'],
+  'Gisela Spies': ['Mario Garamendi','Iara Montero','Rocío Díaz','Sol Acosta','Rocío Macaudiere','Franco Giudice','Astrid Schneider','Ezequiel Spilotti','Julieta Jose','Agustina Eguiazu'],
+  'David Leiva': ['Facundo Ravelo','Natalia Machado','Martín Bolívar','Nahuel Martínez','Melisa Scatolini','Camila Capaldi','Valeria Barroso','Florencia Muga','Paula Fernández','Jonatan Murolo'],
+  'Sol Celli': ['Ángeles Gonzales','Antonella Zapacostta','Gastón Sarina','Maximiliano Khoury','Belén Carello','Julieta Viñas','Cristian Romero','Nair Elías','Julieta Basabe','Florencia Jaure'],
+  'Marcos Cortella': ['Bautista Courault','Ayelén Zini','Delfina Courault','Soledad Dusso','Valentina Rubiolo','Clementina Pierini','Rocío Ludueña','Sybela Franco'],
+  'Yanina Pacheco': ['Tatiana Antonini','Milagros Venturino','Abril Tallafer','Florencia Giavelli','Andrea Maurenzi','Evelina Dinapoli','Juan P. Fernández','Sebastián Benítez','Gerónimo Sovrano','Brisa Romagnoli'],
+  'Victoria Palombizio': ['Stefania Alberti','Gonzalo Yieff','Micaela Carpenzano','Victoria Mendoza','Gonzalo Armua','Fiorella Mazzolari','Bruno Regazzoni','Andrea Ortiz','Paula Carpensano','Andrea Monzón'],
+};
+
+function eqEsc(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+function eqHighlight(name, q) {
+  if (!q) return eqEsc(name);
+  const idx = name.toLowerCase().indexOf(q.toLowerCase());
+  if (idx === -1) return eqEsc(name);
+  return eqEsc(name.slice(0,idx)) + '<span class="hl">' + eqEsc(name.slice(idx,idx+q.length)) + '</span>' + eqEsc(name.slice(idx+q.length));
+}
+
+function eqRender() {
+  const grid = document.getElementById('eq-grid');
+  const empty = document.getElementById('eq-empty');
+  const countEl = document.getElementById('eq-count');
+  if (!grid) return;
+  const q = (document.getElementById('eq-search')?.value || '').trim().toLowerCase();
+
+  grid.innerHTML = '';
+  let visibleTeams = 0, totalIntegrantes = 0;
+
+  Object.entries(ENTRENA2_TEAMS).forEach(([sup, integrantes]) => {
+    const supMatch = sup.toLowerCase().includes(q);
+    const membersFiltered = integrantes.filter(n => supMatch || n.toLowerCase().includes(q));
+    if (q && membersFiltered.length === 0) return;
+
+    visibleTeams++;
+    totalIntegrantes += integrantes.length;
+
+    const card = document.createElement('div');
+    card.className = 'eq-card';
+    card.innerHTML = `
+      <div class="eq-card-head">
+        <div class="eq-card-sup">${eqHighlight(sup, supMatch ? '' : q)}</div>
+        <div class="eq-card-count">${integrantes.length} integrantes</div>
+      </div>
+      <div class="eq-card-body">
+        ${integrantes.map((n,i) => {
+          const show = !q || supMatch || n.toLowerCase().includes(q);
+          return `<div class="eq-member${show?'':' eq-hidden'}">
+            <span class="eq-member-num">${i+1}</span>
+            <span class="eq-member-name">${eqHighlight(n, supMatch ? '' : q)}</span>
+          </div>`;
+        }).join('')}
+      </div>`;
+    grid.appendChild(card);
+  });
+
+  empty.style.display = visibleTeams === 0 ? 'block' : 'none';
+  countEl.textContent = q
+    ? `${visibleTeams} de ${Object.keys(ENTRENA2_TEAMS).length} equipos`
+    : `${Object.keys(ENTRENA2_TEAMS).length} equipos · ${totalIntegrantes} integrantes`;
+}
+
+// ═══════════════════════════════════════════════════════════════
 // NAVEGACIÓN
 // ═══════════════════════════════════════════════════════════════
 const SCREENS = {
@@ -977,6 +1095,7 @@ const SCREENS = {
   sabados:  {title:'Guardias Sábados', sub:'Planificación anual de guardias'},
   horarios: {title:'Planilla de Horarios', sub:'Gestión mensual de presencialidad'},
   colaboradores: {title:'Tareas Colaboradores', sub:'Distribución mensual por área'},
+  equipos: {title:'Equipo de Entrena2 2026', sub:'Supervisores e integrantes de equipo'},
 };
 let currentScreen = 'rotacion';
 
@@ -994,6 +1113,7 @@ function goTo(screen) {
   if (screen === 'sabados') sabRender();
   if (screen === 'horarios') phRender();
   if (screen === 'colaboradores') colabRender();
+  if (screen === 'equipos') eqRender();
 }
 function openSidebar()  { document.getElementById('sidebar').classList.add('open'); document.getElementById('mob-overlay').classList.add('open'); }
 function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('mob-overlay').classList.remove('open'); }
