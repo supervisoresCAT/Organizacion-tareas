@@ -584,6 +584,23 @@ button { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
 </head>
 <body>
 
+<style>
+#loginOverlay{position:fixed;inset:0;background:#f4f6f9;display:flex;align-items:center;justify-content:center;z-index:99999}
+#loginBox{background:#fff;padding:24px;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,.2);width:320px;font-family:Arial}
+#loginBox input{width:100%;padding:8px;margin:6px 0}
+</style>
+<div id="loginOverlay"><div id="loginBox"><h2>Acceso Supervisores</h2>
+<input id="u" placeholder="Usuario"><input id="p" type="password" placeholder="Contraseña">
+<button onclick="login()">Ingresar</button><p id="e" style="color:red"></p></div></div>
+<script>
+const USER='supervisores',PASS='JS2026';
+function show(){document.getElementById('loginOverlay').style.display='none';}
+if(localStorage.getItem('auth')==='ok') window.addEventListener('load',show);
+function login(){if(u.value===USER&&p.value===PASS){localStorage.setItem('auth','ok');show();}else e.textContent='Usuario o contraseña incorrectos';}
+function logout(){localStorage.removeItem('auth');location.reload();}
+</script>
+
+
 <!-- LANDING SCREEN -->
 <div class="landing-page" id="landing">
   <div class="landing-header">
@@ -1636,7 +1653,7 @@ function rotExportPDF() {
   <div class="lc"><div class="lt">Referencias</div><div class="lw">${legHTML}</div></div>
   <div class="pb"><button onclick="window.print()">🖨️ Imprimir / Guardar como PDF</button></div>
   <div class="ft">Jerárquicos Salud · Rotación de Supervisores · ${mes} ${rotYear}</div>
-  </div></body></html>`;
+  </div><button onclick="logout()" style="position:fixed;top:10px;right:10px;z-index:9999">Cerrar sesión</button></body></html>`;
   const blob=new Blob([html],{type:'text/html;charset=utf-8'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.target='_blank';a.rel='noopener';a.click();
   setTimeout(()=>URL.revokeObjectURL(a.href),5000);
@@ -2161,7 +2178,7 @@ function phExportPDF() {
   </div>
   <div class="pb"><button onclick="window.print()">🖨️ Imprimir / Guardar como PDF</button></div>
   <div class="ft">Jerárquicos Salud · Planilla de Horarios · ${mesNombre}</div>
-  </div></body></html>`;
+  </div><button onclick="logout()" style="position:fixed;top:10px;right:10px;z-index:9999">Cerrar sesión</button></body></html>`;
 
   const blob=new Blob([html],{type:'text/html;charset=utf-8'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.target='_blank';a.rel='noopener';a.click();
@@ -2849,7 +2866,7 @@ function colabExportPDF() {
     window.addEventListener('resize', fitToOnePage);
   })();
   <\/script>
-  </body></html>`;
+  <button onclick="logout()" style="position:fixed;top:10px;right:10px;z-index:9999">Cerrar sesión</button></body></html>`;
 
   const blob=new Blob([html],{type:'text/html;charset=utf-8'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.target='_blank';a.rel='noopener';a.click();
@@ -3213,5 +3230,5 @@ document.querySelector('.sb-brand').onclick = () => {
   document.getElementById('app-wrapper').style.display = 'none';
 };
 </script>
-</body>
+<button onclick="logout()" style="position:fixed;top:10px;right:10px;z-index:9999">Cerrar sesión</button></body>
 </html>
