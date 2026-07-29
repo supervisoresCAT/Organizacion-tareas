@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Organización Supers — Jerárquicos Salud</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Org Supers">
+<meta name="theme-color" content="#00554e">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* --- ESTILOS GENERALES --- */
+@property --angle { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
+@keyframes snake-spin { to { --angle: 360deg; } }
+@keyframes snake-glow {
+  0%, 100% { filter: drop-shadow(0 0 2px rgba(83, 102, 255, 0.6)); opacity: 0.7; }
+  50% { filter: drop-shadow(0 0 8px rgba(83, 102, 255, 1)); opacity: 1; }
+}
+
+:root {
+  --impulsa:#5366ff; --impulsa-lt:#e8eeff; --impulsa-md:#3d4acc;
+  --elite:#4a537d;   --elite-lt:#eef0f8;
+  --conecta:#b688ea; --conecta-lt:#f5effd;
+  --avanza:#00cd94;  --avanza-lt:#e0fdf4;
+  --save:#f39c12;    --save-lt:#fef3cd;
+  --danger:#e74c3c;  --danger-lt:#fdeaea;
+  --white:#fff; --bg:#f8faff; --border:#e2e8f0;
+  --text:#1e293b; --muted:#64748b;
+  --card:#fff;
+  --sidebar-w:220px;
+  --header-h:56px;
+  --radius:12px; --radius-lg:18px;
+  --shadow:0 2px 8px rgba(83,102,255,.07);
+}
+
+[data-theme="dark"]{
+  --white:#1e2433; --bg:#141824; --border:#2a3347;
+  --text:#e2e8f0; --muted:#8896b3; --card:#252d3f;
+}
+
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Inter','Segoe UI',sans-serif;background:var(--bg);color:var(--text);margin:0;padding:0;}
+
+/* --- ESTILOS DE LOGIN (Fondo Azul Oscuro) --- */
+#loginOverlay {
+    position:fixed; inset:0; 
+    background: linear-gradient(135deg, #0d1b2a 0%, #1b263b 50%, #415a77 100%); 
+    display:flex; align-items:center; justify-content:center; z-index:99999;
+}
+#loginBox {
+    background:#fff; padding:32px 28px; border-radius:18px; 
+    box-shadow:0 20px 50px rgba(0,0,0,0.5); width:100%; max-width:320px; text-align:center;
+}
+#loginBox .lb-logo{background:var(--impulsa); color:#fff; width:44px; height:44px; border-radius:12px; font-weight:800; display:flex; align-items:center; justify-content:center; margin:0 auto 14px;}
+#loginBox input{width:100%; padding:10px; margin:6px 0; border:1px solid #e2e8f0; border-radius:10px; outline:none;}
+#loginBox button{width:100%; padding:11px; margin-top:10px; border:none; border-radius:10px; background:var(--impulsa); color:#fff; font-weight:700; cursor:pointer;}
+
+/* --- DISEÑO APP --- */
+.app-wrapper{display:flex; min-height:100vh;}
+.sidebar{width:var(--sidebar-w); background:var(--impulsa); color:white; position:fixed; height:100vh; padding:20px;}
+.main{margin-left:var(--sidebar-w); flex:1; display:flex; flex-direction:column;}
+.topbar{height:var(--header-h); background:white; border-bottom:1px solid var(--border); display:flex; align-items:center; padding:0 24px; position:sticky; top:0; z-index:50;}
+.content{padding:24px;}
+.card{background:white; border-radius:var(--radius-lg); box-shadow:var(--shadow); margin-bottom:18px; padding:20px;}
+
+.nav-item{display:block; padding:10px; color:rgba(255,255,255,0.7); text-decoration:none; border-radius:8px; margin-bottom:5px; cursor:pointer;}
+.nav-item.active, .nav-item:hover{background:rgba(255,255,255,0.1); color:white;}
+
+.screen{display:none;}
+.screen.active{display:block;}
+
+/* --- EQUIPOS ESTILOS --- */
+.eq-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:15px;}
+.eq-card{border:1px solid var(--border); border-radius:12px; overflow:hidden;}
+.eq-card-head{background:#fce7f3; padding:10px; font-weight:bold; color:#831843; display:flex; justify-content:space-between;}
+.eq-card-body{padding:10px;}
+.eq-member{display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid #eee; font-size:13px;}
+.btn-del{color:red; cursor:pointer; font-weight:bold;}
+.add-member-box{margin-top:10px; display:flex; gap:5px;}
+.add-member-box input{flex:1; padding:5px; border:1px solid var(--border); border-radius:4px;}
+
+/* LANDING */
+.landing-page{position:fixed; inset:0; background:var(--impulsa); z-index:9000; display:flex; flex-direction:column; align-items:center; justify-content:center; color:white;}
+.landing-page.hidden{display:none;}
+.landing-card{background:rgba(255,255,255,0.1); padding:20px; border-radius:15px; margin:10px; cursor:pointer; width:250px; text-align:center;}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginOverlay">
+  <div id="loginBox">
+    <div class="lb-logo">JS</div>
+    <h2>Acceso Supervisores</h2>
+    <div class="lb-sub" style="font-size:12px; color:#666; margin-bottom:15px;">Jerárquicos Salud</div>
+    <input id="u" placeholder="Usuario">
+    <input id="p" type="password" placeholder="Contraseña">
+    <button onclick="login()">Ingresar</button>
+    <p id="e" style="color:red; font-size:12px; margin-top:10px;"></p>
+  </div>
+</div>
+
+<!-- LANDING -->
+<div id="landing" class="landing-page hidden">
+    <h1>Organización Supers</h1>
+    <p>Jerárquicos Salud</p>
+    <div style="display:flex; flex-wrap:wrap; justify-content:center;">
+        <div class="landing-card" onclick="goTo('rotacion')">📅 Rotación Diaria</div>
+        <div class="landing-card" onclick="goTo('equipos')">🧑‍🤝‍🧑 Equipo Entrena2</div>
+    </div>
+</div>
+
+<!-- APP -->
+<div id="app-wrapper" class="app-wrapper" style="display:none;">
+    <nav class="sidebar">
+        <h3>JS Supers</h3>
+        <hr style="margin:15px 0; opacity:0.3;">
+        <div class="nav-item" onclick="goTo('rotacion')">Rotación Diaria</div>
+        <div class="nav-item" onclick="goTo('equipos')">Equipo Entrena2</div>
+        <div class="nav-item" style="color:#ff9b9b; margin-top:20px;" onclick="logout()">Cerrar Sesión</div>
+    </nav>
+
+    <div class="main">
+        <div class="topbar">
+            <h2 id="topbar-title">Panel de Control</h2>
+        </div>
+        <div class="content">
+            <!-- SCREEN ROTACION (Ejemplo vacío) -->
+            <div id="screen-rotacion" class="screen">
+                <div class="card">
+                    <h3>Rotación Diaria</h3>
+                    <p>Contenido de la rotación...</p>
+                </div>
+            </div>
+
+            <!-- SCREEN EQUIPOS -->
+            <div id="screen-equipos" class="screen">
+                <div class="card">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <h2>Equipo Entrena2</h2>
+                        <select id="eq-year" onchange="loadTeams()" class="btn">
+                            <option value="2024">2024</option>
+                            <option value="2025">2025</option>
+                            <option value="2026" selected>2026</option>
+                            <option value="2027">2027</option>
+                        </select>
+                    </div>
+                    <div id="eq-grid" class="eq-grid" style="margin-top:20px;">
+                        <!-- Se carga con JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// --- CONFIGURACIÓN Y LOGIN ---
+const USER = 'supervisores';
+const PASS = 'js2026'; // NUEVA CONTRASEÑA SOLICITADA
+
+function login() {
+    const u = document.getElementById('u').value;
+    const p = document.getElementById('p').value;
+    if(u === USER && p === PASS) {
+        localStorage.setItem('auth_ok', 'true');
+        showApp();
+    } else {
+        document.getElementById('e').textContent = 'Error: Datos incorrectos';
+    }
+}
+
+function showApp() {
+    document.getElementById('loginOverlay').style.display = 'none';
+    document.getElementById('landing').classList.remove('hidden');
+}
+
+function logout() {
+    localStorage.removeItem('auth_ok');
+    location.reload();
+}
+
+// --- NAVEGACIÓN ---
+function goTo(screenId) {
+    document.getElementById('landing').classList.add('hidden');
+    document.getElementById('app-wrapper').style.display = 'flex';
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('screen-' + screenId).classList.add('active');
+    document.getElementById('topbar-title').textContent = screenId.toUpperCase();
+    if(screenId === 'equipos') loadTeams();
+}
+
+// --- LÓGICA DE EQUIPOS ---
+const SUPERVISORES = ['Sol Celli', 'Lumila Perri', 'Alejandra Sosa', 'Victoria Palombizio', 'David Leiva', 'Ximena Epelbaum', 'Fabricio Figueroa', 'Jesica Carrasco', 'Yanina Pacheco', 'Marcos Cortella', 'Gisela Spies', 'Martin Paravan'];
+
+// Base de datos local (se sincroniza con localStorage para este ejemplo)
+let dbEquipos = JSON.parse(localStorage.getItem('db_equipos')) || {};
+
+function loadTeams() {
+    const year = document.getElementById('eq-year').value;
+    const grid = document.getElementById('eq-grid');
+    grid.innerHTML = '';
+
+    // Si no hay datos para ese año, inicializamos vacíos
+    if(!dbEquipos[year]) {
+        dbEquipos[year] = {};
+        SUPERVISORES.forEach(s => dbEquipos[year][s] = []);
+    }
+
+    SUPERVISORES.forEach(sup => {
+        const members = dbEquipos[year][sup] || [];
+        const card = document.createElement('div');
+        card.className = 'eq-card';
+        card.innerHTML = `
+            <div class="eq-card-head">${sup} <span>${members.length}</span></div>
+            <div class="eq-card-body">
+                <div id="list-${year}-${sup.replace(/\s/g, '')}">
+                    ${members.map((m, idx) => `
+                        <div class="eq-member">
+                            ${m} <span class="btn-del" onclick="removeMember('${year}','${sup}',${idx})">×</span>
+                        </div>
+                    `).join('')}
+                </div>
+                <div class="add-member-box">
+                    <input type="text" id="in-${year}-${sup.replace(/\s/g, '')}" placeholder="Nuevo...">
+                    <button onclick="addMember('${year}','${sup}')">Add</button>
+                </div>
+            </div>
+        `;
+        grid.appendChild(card);
+    });
+}
+
+function addMember(year, sup) {
+    const input = document.getElementById(`in-${year}-${sup.replace(/\s/g, '')}`);
+    const name = input.value.trim();
+    if(name) {
+        dbEquipos[year][sup].push(name);
+        saveAndRefresh();
+    }
+}
+
+function removeMember(year, sup, idx) {
+    dbEquipos[year][sup].splice(idx, 1);
+    saveAndRefresh();
+}
+
+function saveAndRefresh() {
+    localStorage.setItem('db_equipos', JSON.stringify(dbEquipos));
+    loadTeams();
+}
+
+// Auto-login si ya estaba autenticado
+if(localStorage.getItem('auth_ok') === 'true') showApp();
+
+</script>
+</body>
+</html>
