@@ -832,6 +832,16 @@ thead th.ph-sticky{z-index:40;background:#f8fafc;}
 [data-theme="dark"] .ph-time.ph-h07,[data-theme="dark"] .ph-card-time.ph-h07{background:#9c6519;color:#fff;border-color:#7d5014;}
 [data-theme="dark"] .ph-time.ph-h08,[data-theme="dark"] .ph-card-time.ph-h08{background:#3a6485;color:#fff;border-color:#2c4d67;}
 [data-theme="dark"] .ph-time.ph-h11,[data-theme="dark"] .ph-card-time.ph-h11{background:#654a8c;color:#fff;border-color:#4f3a6e;}
+.ph-table .ph-wk-start{border-left:3px solid var(--border);}
+.ph-table td.ph-wk-alt,.ph-table th.ph-wk-alt{background:rgba(91,155,213,.06);}
+.ph-table thead th.ph-wk-alt{background:#eef3fa;}
+[data-theme="dark"] .ph-table td.ph-wk-alt{background:rgba(255,255,255,.03);}
+[data-theme="dark"] .ph-table thead th.ph-wk-alt{background:#222a3b;}
+[data-theme="dark"] .ph-table thead th{background:#1e2433;}
+[data-theme="dark"] .ph-wbtn,[data-theme="dark"] .ph-wbtn-h{background:var(--card);color:var(--text);border-color:var(--border);}
+[data-theme="dark"] #ph-guards-body tr{background:transparent!important;}
+[data-theme="dark"] #ph-guards-body tr:first-child{background:rgba(0,205,148,.08)!important;}
+.ph-wk-lbl{display:block;font-size:8px;font-weight:700;color:var(--muted);letter-spacing:.04em;margin-bottom:2px;}
 .ph-legend{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:10px;font-weight:700;color:var(--muted);}
 .ph-legend span.ph-time{margin-top:0;cursor:default;width:auto;padding:4px 10px;}
 .ph-foot td{background:var(--bg);font-size:10px;font-weight:700;padding:7px 5px;border-top:2px solid var(--border);text-align:center;}
@@ -7000,6 +7010,16 @@ function phGetMonthDays(y,m){
 }
 
 let phCurrentDays = [];
+// Para cada día: número de semana del mes y clases de separación (inicio de semana / semana alternada)
+function phWeekClasses(days){
+  let w=0; const cls=[], num=[];
+  days.forEach((d,i)=>{
+    if(i===0 || d.getDay()===1) w++;
+    num.push(w);
+    cls.push([(i>0 && d.getDay()===1)?'ph-wk-start':'', w%2===0?'ph-wk-alt':''].filter(Boolean).join(' '));
+  });
+  return {cls,num};
+}
 function phRender(){
   const [y,m]=document.getElementById('ph-month').value.split('-');
   let days=phGetMonthDays(parseInt(y),parseInt(m));
@@ -7009,9 +7029,12 @@ function phRender(){
   const foot=document.getElementById('ph-foot');
   header.innerHTML='<th class="ph-sticky">Supervisor / Dupla</th>';
   foot.innerHTML='<td class="ph-sticky" style="text-align:left;padding-left:16px;"><b>Presenciales 7 a 15 / 8 a 16 (mín. 5)</b></td>';
+  // Separación visual entre semanas: línea al empezar cada semana y semanas alternadas sombreadas
+  const wkCls = phWeekClasses(days);
   days.forEach((wd,i)=>{
-    header.innerHTML+=`<th>${['L','M','M','J','V'][wd.getDay()-1]}<br>${wd.getDate()}</th>`;
-    foot.innerHTML+=`<td id="ph-cnt-${i}"><span class="ph-cnt-invalid">0</span></td>`;
+    const lbl = (i===0 || wd.getDay()===1) ? `<span class="ph-wk-lbl">SEM ${wkCls.num[i]}</span>` : '';
+    header.innerHTML+=`<th class="${wkCls.cls[i]}">${lbl}${['L','M','M','J','V'][wd.getDay()-1]}<br>${wd.getDate()}</th>`;
+    foot.innerHTML+=`<td id="ph-cnt-${i}" class="${wkCls.cls[i]}"><span class="ph-cnt-invalid">0</span></td>`;
   });
   body.innerHTML='';
   phSupervisores.forEach((s,sIdx)=>{
@@ -7029,7 +7052,7 @@ function phRender(){
       </div>
     </td>`;
     days.forEach((_,dIdx)=>{
-      row+=`<td><div style="padding:3px;text-align:center;">
+      row+=`<td class="${wkCls.cls[dIdx]}"><div style="padding:3px;text-align:center;">
         <div class="ph-badge bg-home" id="ph-st-${sIdx}-${dIdx}" onclick="phToggleSt(this)">HomeOffice</div>
         <div class="ph-time" id="ph-tm-${sIdx}-${dIdx}" onclick="phToggleTm(this)">${s.h}</div>
       </div></td>`;
