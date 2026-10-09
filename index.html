@@ -384,6 +384,10 @@ body{font-family:'Inter','Segoe UI',sans-serif;background:var(--bg);color:var(--
 .mon-addaux-row input:focus{border-color:var(--mon);}
 .mon-addaux-row button{padding:8px 14px;border:none;border-radius:8px;background:var(--mon);color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;}
 .mon-addaux-row button:hover{background:var(--mon-md);}
+.mon-addaux-row button.semana{background:var(--card);color:var(--mon-md);border:1.5px dashed var(--mon);}
+.mon-addaux-row button.semana:hover{background:var(--mon-lt);}
+.mon-cob-tag{font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:20px;white-space:nowrap;background:#fff4e0;color:#b7791f;border:1px dashed #e0b25c;}
+[data-theme="dark"] .mon-cob-tag{background:#3a2e12;color:#f6c76b;border-color:#8a6a2a;}
 .mon-year-badge{font-size:10.5px;font-weight:800;padding:3px 9px;border-radius:20px;background:var(--mon-lt);color:var(--mon-md);white-space:nowrap;}
 .mon-year-badge.mon-year-cross{background:var(--save-lt);color:#8a5a00;}
 [data-theme="dark"] .mon-year-badge{background:#241a3d;color:#c4b5fd;}
@@ -1784,15 +1788,18 @@ document.getElementById('p').addEventListener('keydown', evt => { if(evt.key==='
           <div id="mon-semanal-view">
             <div id="mon-grid"></div>
             <div class="mon-addaux-row" id="mon-addaux-row" style="display:none;">
-              <input type="text" id="mon-add-aux-input" placeholder="Nombre del nuevo auxiliar..." onkeydown="if(event.key==='Enter'){monAddAuxiliar();}">
-              <button onclick="monAddAuxiliar()">＋ Agregar auxiliar</button>
+              <input type="text" id="mon-add-aux-input" list="mon-aux-sugerencias" placeholder="Nombre del auxiliar..." onkeydown="if(event.key==='Enter'){monAddAuxiliar();}">
+              <button onclick="monAddAuxiliar()" title="Lo suma al equipo fijo (también en Equipo de Entrena2)">＋ Agregar al equipo</button>
+              <button class="semana" onclick="monAddAuxiliar(true)" title="Solo para esta semana, por ejemplo para cubrir vacaciones. No cambia el equipo fijo.">📅 Solo esta semana</button>
             </div>
             <div class="mon-empty" id="mon-empty" style="display:none;">Este supervisor todavía no tiene integrantes cargados. Agregalo acá abajo o desde <a href="#" onclick="goTo('equipos');return false;">Equipo de Entrena2</a>.
               <div class="mon-addaux-row" style="border-top:none;justify-content:center;">
-                <input type="text" id="mon-add-aux-input-empty" placeholder="Nombre del nuevo auxiliar..." onkeydown="if(event.key==='Enter'){monAddAuxiliarEmpty();}">
-                <button onclick="monAddAuxiliarEmpty()">＋ Agregar auxiliar</button>
+                <input type="text" id="mon-add-aux-input-empty" list="mon-aux-sugerencias" placeholder="Nombre del auxiliar..." onkeydown="if(event.key==='Enter'){monAddAuxiliarEmpty();}">
+                <button onclick="monAddAuxiliarEmpty()">＋ Agregar al equipo</button>
+                <button class="semana" onclick="monAddAuxiliarEmpty(true)">📅 Solo esta semana</button>
               </div>
             </div>
+            <datalist id="mon-aux-sugerencias"></datalist>
           </div>
           <div id="mon-resumen-view" style="display:none;">
             <div id="mon-res-table-wrap"></div>
@@ -2639,8 +2646,30 @@ function monCanonPlanilla(pl) {
   return { id: String(pl.id || ''), convs: n, fecha: pl.fecha || '', canal: pl.canal || '',
     estado: (pl.estado && typeof pl.estado === 'object') ? pl.estado : null };
 }
+// ── Auxiliares agregados SOLO para una semana (p. ej. cubriendo vacaciones de otro supervisor) ──
+// Se guardan en la fila de ese supervisor/semana bajo la clave reservada "_cobertura":
+// [ { nombre, de } ]  (de = supervisor del equipo de origen, si se lo encontró). No tocan el equipo fijo.
+// Toda clave que empieza con "_" es reservada (no es un auxiliar).
+const MON_COB_KEY = '_cobertura';
+function monIsReserved(k) { return typeof k === 'string' && k.charAt(0) === '_'; }
+function monCanonCob(raw) {
+  const seen = new Set();
+  return (Array.isArray(raw) ? raw : [])
+    .map(x => (typeof x === 'string') ? { nombre: x, de: '' } : x)
+    .filter(x => x && String(x.nombre || '').trim())
+    .map(x => ({ nombre: String(x.nombre).trim(), de: String(x.de || '').trim() }))
+    .filter(x => { const k = x.nombre.toLowerCase(); if (seen.has(k)) return false; seen.add(k); return true; })
+    .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+}
+// Para editar en memoria (crea la lista si no existe)
+function monGetCobertura(key, sup) {
+  const sd = monGetSupData(key, sup);
+  if (!Array.isArray(sd[MON_COB_KEY])) sd[MON_COB_KEY] = [];
+  return sd[MON_COB_KEY];
+}
 function monCanonAux(auxKey, raw) {
   if (auxKey === '_extra') return { errores: Number(raw && raw.errores) || 0 };
+  if (auxKey === MON_COB_KEY) return monCanonCob(raw);
   if (Array.isArray(raw)) raw = { modo: 'monitoreo', entries: raw, inbox: null };
   if (!raw || typeof raw !== 'object') raw = {};
   const entries = Array.isArray(raw.entries) ? raw.entries : [];
@@ -2930,7 +2959,7 @@ function monStatsFor(weekKey, sup) {
   const sd = monGetWeekData(weekKey)[sup] || {};
   let express = 0, inbox = 0, inboxConv = 0, colaboradores = 0;
   Object.keys(sd).forEach(aux => {
-    if (aux === '_extra') return;
+    if (monIsReserved(aux)) return;
     if (!sd[aux] || typeof sd[aux] !== 'object') return;
     const data = monCanonAux(aux, sd[aux]); // contempla también el formato viejo (array plano)
     const ib = monInboxStats(data.inbox);
@@ -3378,7 +3407,17 @@ function monRender() {
   const key = monWeekKey(monWeekMonday);
   // Usa el año propio de la semana (no el de la pantalla Equipo de Entrena2),
   // así al cruzar de año en Monitoreos siempre trae el equipo correcto.
-  const team = (eqGetYearData(wYear)[monSelectedSup]) || [];
+  const sup = monSelectedSup;
+  // Lectura PURA para las filas cerradas: no modifica nada en memoria.
+  const supRaw = (monSavedData[key] || {})[sup] || {};
+  const teamFijo = (eqGetYearData(wYear)[sup]) || [];
+  // Auxiliares sumados solo para esta semana (cobertura de vacaciones). Si alguno ya está
+  // en el equipo fijo, no se duplica.
+  const fijoLc = new Set(teamFijo.map(n => n.toLowerCase()));
+  const cob = monCanonCob(supRaw[MON_COB_KEY]).filter(c => !fijoLc.has(c.nombre.toLowerCase()));
+  const cobDe = {}; cob.forEach(c => { cobDe[c.nombre] = c.de; });
+  const team = [...teamFijo, ...cob.map(c => c.nombre)];
+  monFillSugerencias(wYear, sup, team);
 
   if (!team.length) {
     grid.innerHTML = '';
@@ -3389,15 +3428,14 @@ function monRender() {
   empty.style.display = 'none';
   addRow.style.display = 'flex';
 
-  const sup = monSelectedSup;
-  // Lectura PURA para las filas cerradas: no modifica nada en memoria.
-  const supRaw = (monSavedData[key] || {})[sup] || {};
   const supDirty = monDirtyKeys.has(key + '|' + sup);
   const base = supDirty ? monBaseFor(key, sup) : null;
   if (monOpenAux && !team.includes(monOpenAux)) monOpenAux = null;
 
   let conMon = 0, pend = 0;
   const rows = team.map(aux => {
+    const esCob = aux in cobDe;
+    const cobTag = esCob ? `<span class="mon-cob-tag" title="Agregado solo para esta semana">📅 Esta semana${cobDe[aux] ? ' · eq. ' + licEsc(cobDe[aux]) : ''}</span>` : '';
     const sum = monAuxSummary(aux, supRaw[aux]);
     if (sum.n > 0) conMon++;
     if (sum.estado !== 'listo') pend++;
@@ -3415,13 +3453,14 @@ function monRender() {
       <button type="button" class="mon-acc-row" onclick="monToggleAux('${licJs(aux)}')" aria-expanded="${open}">
         <span class="mon-acc-av ${sum.n === 0 ? 'vacio' : colorCls}">${monInitials(aux)}</span>
         <span class="mon-acc-name" title="${licEsc(aux)}">${licEsc(aux)}</span>
+        ${cobTag}
         ${unsaved ? '<span class="mon-unsaved">● Sin guardar</span>' : ''}
         ${chip}
         <span class="mon-dots">${dots}</span>
         <span class="mon-state ${sum.estado}">${estadoTxt}</span>
         <span class="mon-chev">▾</span>
       </button>
-      ${open ? monAccPanelHTML(key, sup, aux) : ''}
+      ${open ? monAccPanelHTML(key, sup, aux, esCob) : ''}
     </div>`;
   }).join('');
 
@@ -3449,7 +3488,7 @@ function monAuxSummary(aux, raw) {
 }
 
 // Panel desplegado de un auxiliar (usa las mismas funciones de carga de siempre).
-function monAccPanelHTML(key, sup, aux) {
+function monAccPanelHTML(key, sup, aux, esCob) {
   const auxData = monGetAuxData(key, sup, aux);
   const modo = auxData.modo;
   const S = licJs(sup), A = licJs(aux);
@@ -3458,7 +3497,9 @@ function monAccPanelHTML(key, sup, aux) {
   const tools = `<div class="mon-acc-tools">
       <span style="flex:1"></span>
       ${hayPdf ? `<button type="button" class="mon-tool-btn" onclick="monExportPDF('${S}','${A}')">📄 PDF</button>` : ''}
-      <button type="button" class="mon-tool-btn danger" onclick="monRemoveAuxiliar('${S}','${A}')" title="Quitar auxiliar del equipo">Quitar del equipo</button>
+      ${esCob
+        ? `<button type="button" class="mon-tool-btn danger" onclick="monQuitarCobertura('${S}','${A}')" title="Lo saca solo de esta semana">Quitar de esta semana</button>`
+        : `<button type="button" class="mon-tool-btn danger" onclick="monRemoveAuxiliar('${S}','${A}')" title="Quitar auxiliar del equipo">Quitar del equipo</button>`}
     </div>`;
   const entries = auxData.entries;
   const ib = monInboxStats(c.inbox);
@@ -3837,18 +3878,64 @@ async function monSaveEquipo(year) {
   await sbUpsert('js_dist_anual', {key:'equipos_'+year, data:JSON.stringify(eqGetYearData(year)), updated_at:new Date().toISOString()});
 }
 
-async function monAddAuxiliar() {
+async function monAddAuxiliar(soloSemana) {
   const input = document.getElementById('mon-add-aux-input');
-  await monDoAddAuxiliar(input);
+  await monDoAddAuxiliar(input, soloSemana === true);
 }
-async function monAddAuxiliarEmpty() {
+async function monAddAuxiliarEmpty(soloSemana) {
   const input = document.getElementById('mon-add-aux-input-empty');
-  await monDoAddAuxiliar(input);
+  await monDoAddAuxiliar(input, soloSemana === true);
 }
-async function monDoAddAuxiliar(input) {
+// Sugerencias del campo de nombre: auxiliares de los OTROS equipos (útil para cubrir vacaciones).
+function monFillSugerencias(year, sup, teamActual) {
+  const dl = document.getElementById('mon-aux-sugerencias');
+  if (!dl) return;
+  const ya = new Set((teamActual || []).map(n => n.toLowerCase()));
+  const data = eqGetYearData(year) || {};
+  const opts = [];
+  Object.keys(data).forEach(s => {
+    if (s === sup || !Array.isArray(data[s])) return;
+    data[s].forEach(n => { if (n && !ya.has(n.toLowerCase())) opts.push(`<option value="${licEsc(n)}">Equipo de ${licEsc(s)}</option>`); });
+  });
+  dl.innerHTML = opts.join('');
+}
+// Busca en qué equipo fijo está un auxiliar (para mostrar "eq. X" y usar su nombre tal cual está cargado).
+function monBuscarEquipoDe(year, name, exceptSup) {
+  const data = eqGetYearData(year) || {};
+  const lc = name.toLowerCase();
+  for (const s of Object.keys(data)) {
+    if (s === exceptSup || !Array.isArray(data[s])) continue;
+    const hit = data[s].find(n => n && n.toLowerCase() === lc);
+    if (hit) return { nombre: hit, de: s };
+  }
+  return { nombre: name, de: '' };
+}
+async function monDoAddAuxiliar(input, soloSemana) {
   const name = (input?.value || '').trim();
   if (!name) return;
   const year = monWeekMonday.getFullYear();
+  if (soloSemana) {
+    const sup = monSelectedSup;
+    const key = monWeekKey(monWeekMonday);
+    const fijo = eqGetYearData(year)[sup] || [];
+    if (fijo.some(n => n.toLowerCase() === name.toLowerCase())) {
+      alert(`"${name}" ya está en el equipo fijo de ${sup}`);
+      return;
+    }
+    const cob = monGetCobertura(key, sup);
+    if (cob.some(c => String(c && c.nombre || c).toLowerCase() === name.toLowerCase())) {
+      alert(`"${name}" ya está agregado para esta semana`);
+      return;
+    }
+    const found = monBuscarEquipoDe(year, name, sup);
+    cob.push(found);
+    input.value = '';
+    monTouch(sup);
+    monOpenAux = found.nombre;
+    monRender();
+    showBackupToast(`📅 ${found.nombre} agregado solo para esta semana — tocá 💾 Guardar`);
+    return;
+  }
   const data = eqGetYearData(year);
   if (!data[monSelectedSup]) data[monSelectedSup] = [];
   if (data[monSelectedSup].some(n => n.toLowerCase() === name.toLowerCase())) {
@@ -3858,6 +3945,24 @@ async function monDoAddAuxiliar(input) {
   data[monSelectedSup].push(name);
   input.value = '';
   await monSaveEquipo(year);
+  monRender();
+}
+
+// Saca un auxiliar agregado solo para esta semana. Si ya tiene monitoreos cargados, no se deja
+// (si no, esas conversaciones seguirían contando en el Resumen sin verse en pantalla).
+function monQuitarCobertura(sup, aux) {
+  monCommitActive();
+  const key = monWeekKey(monWeekMonday);
+  const sd = monGetSupData(key, sup);
+  if (monAuxSummary(aux, sd[aux]).n > 0) {
+    alert(`${aux} tiene monitoreos cargados esta semana.\n\nPrimero quitá sus conversaciones y después lo sacás de la semana.`);
+    return;
+  }
+  if (!confirm(`¿Quitar a "${aux}" de esta semana? No cambia ningún equipo fijo.`)) return;
+  const cob = monGetCobertura(key, sup);
+  sd[MON_COB_KEY] = cob.filter(c => String(c && c.nombre || c).toLowerCase() !== aux.toLowerCase());
+  if (monOpenAux === aux) monOpenAux = null;
+  monTouch(sup);
   monRender();
 }
 
@@ -3902,7 +4007,7 @@ async function monSave() {
       else conflictos.push(k);                                                                // cambiaron los dos
     });
     if (conflictos.length) {
-      const nombres = conflictos.map(k => k === '_extra' ? 'Errores de información' : k).join(', ');
+      const nombres = conflictos.map(k => k === '_extra' ? 'Errores de información' : k === MON_COB_KEY ? 'Auxiliares agregados solo por esta semana' : k).join(', ');
       const pisar = confirm(`Semana ${wk} · ${sup}\n\nEstos datos también fueron modificados desde otra sesión mientras editabas:\n${nombres}\n\nAceptar = guardar TU versión para esos auxiliares.\nCancelar = no guardar esta semana todavía (tus cambios quedan en pantalla, sin guardar).`);
       if (!pisar) {
         // No se escribe nada y no se toca lo tuyo: queda pendiente para revisar.
