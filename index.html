@@ -825,13 +825,13 @@ thead th.ph-sticky{z-index:40;background:#f8fafc;}
 .ph-time{width:78px;padding:4px 0;border-radius:6px;font-size:8.5px;font-weight:700;cursor:pointer;display:inline-block;text-align:center;background:var(--bg);color:var(--impulsa);border:1px solid var(--border);margin-top:3px;}
 .ph-time-off{background:#f1f5f9;color:#94a3b8;font-style:italic;}
 /* Horario en negrita y con color LLENO propio según la franja (bien diferenciados) */
-.ph-time.ph-h07,.ph-card-time.ph-h07{background:#ea580c;color:#fff;border-color:#c2410c;font-weight:800;}
-.ph-time.ph-h08,.ph-card-time.ph-h08{background:#2563eb;color:#fff;border-color:#1d4ed8;font-weight:800;}
-.ph-time.ph-h11,.ph-card-time.ph-h11{background:#db2777;color:#fff;border-color:#be185d;font-weight:800;}
+.ph-time.ph-h07,.ph-card-time.ph-h07{background:#b8791f;color:#fff;border-color:#9c6519;font-weight:800;}
+.ph-time.ph-h08,.ph-card-time.ph-h08{background:#47799f;color:#fff;border-color:#3a6485;font-weight:800;}
+.ph-time.ph-h11,.ph-card-time.ph-h11{background:#7b5ea7;color:#fff;border-color:#654a8c;font-weight:800;}
 .ph-time.ph-h07,.ph-time.ph-h08,.ph-time.ph-h11{font-size:9px;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
-[data-theme="dark"] .ph-time.ph-h07,[data-theme="dark"] .ph-card-time.ph-h07{background:#c2410c;color:#fff;border-color:#9a3412;}
-[data-theme="dark"] .ph-time.ph-h08,[data-theme="dark"] .ph-card-time.ph-h08{background:#1d4ed8;color:#fff;border-color:#1e3a8a;}
-[data-theme="dark"] .ph-time.ph-h11,[data-theme="dark"] .ph-card-time.ph-h11{background:#be185d;color:#fff;border-color:#9d174d;}
+[data-theme="dark"] .ph-time.ph-h07,[data-theme="dark"] .ph-card-time.ph-h07{background:#9c6519;color:#fff;border-color:#7d5014;}
+[data-theme="dark"] .ph-time.ph-h08,[data-theme="dark"] .ph-card-time.ph-h08{background:#3a6485;color:#fff;border-color:#2c4d67;}
+[data-theme="dark"] .ph-time.ph-h11,[data-theme="dark"] .ph-card-time.ph-h11{background:#654a8c;color:#fff;border-color:#4f3a6e;}
 .ph-legend{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:10px;font-weight:700;color:var(--muted);}
 .ph-legend span.ph-time{margin-top:0;cursor:default;width:auto;padding:4px 10px;}
 .ph-foot td{background:var(--bg);font-size:10px;font-weight:700;padding:7px 5px;border-top:2px solid var(--border);text-align:center;}
@@ -7203,7 +7203,7 @@ function phExportPDF() {
 
   const diasL=['L','M','M','J','V'];
   const stateColor = {'HomeOffice':['#f5effd','#7c3aed'],'Presencial':['#d1fae5','#059669'],'LIC':['#eef0f8','#4a537d']};
-  const horColor = {'07:00 a 15:00':['#fff7ed','#c2410c'],'08:00 a 16:00':['#eff6ff','#1d4ed8'],'11:00 a 19:00':['#fff1f2','#be123c'],'-':['#f1f5f9','#94a3b8']};
+  const horColor = {'07:00 a 15:00':['#fbf0dc','#9c6519'],'08:00 a 16:00':['#eaf4fb','#3a6485'],'11:00 a 19:00':['#f1ecfa','#654a8c'],'-':['#f1f5f9','#94a3b8']};
 
   // Group by week
   const semanas=[]; let sem=[];
@@ -7293,9 +7293,9 @@ function phExportPDF() {
     <span class="leg-item" style="background:#d1fae5;color:#059669;">Presencial</span>
     <span class="leg-item" style="background:#eef0f8;color:#4a537d;">Licencia</span>
     <span style="margin-left:12px;font-size:9px;font-weight:700;color:#64748b;">HORARIOS:</span>
-    <span class="leg-item" style="background:#fff7ed;color:#c2410c;">07:00 a 15:00</span>
-    <span class="leg-item" style="background:#eff6ff;color:#1d4ed8;">08:00 a 16:00</span>
-    <span class="leg-item" style="background:#fff1f2;color:#be123c;">11:00 a 19:00</span>
+    <span class="leg-item" style="background:#fbf0dc;color:#9c6519;">07:00 a 15:00</span>
+    <span class="leg-item" style="background:#eaf4fb;color:#3a6485;">08:00 a 16:00</span>
+    <span class="leg-item" style="background:#f1ecfa;color:#654a8c;">11:00 a 19:00</span>
     <span class="leg-item" style="background:#f1f5f9;color:#94a3b8;">- (Licencia)</span>
   </div>
   ${tablaHTML}
@@ -7435,7 +7435,7 @@ async function phExportExcel(btn) {
         const c = row.getCell(di+2);
         c.value = st === 'LIC' ? 'Lic' : tm;
         c.fill = fill(fillByEstado[st] || C.home);
-        const horTxt = {'07:00 a 15:00':'FFC2410C','08:00 a 16:00':'FF1D4ED8','11:00 a 19:00':'FFBE123C'}[tm];
+        const horTxt = {'07:00 a 15:00':'FF9C6519','08:00 a 16:00':'FF3A6485','11:00 a 19:00':'FF654A8C'}[tm];
         c.font = st === 'LIC' ? {size:9, italic:true, color:{argb:C.licTxt}} : (horTxt ? {size:9, bold:true, color:{argb:horTxt}} : {size:9, bold: st === 'Presencial'});
         c.alignment = {horizontal:'center', vertical:'middle'};
         c.border = allBorders;
