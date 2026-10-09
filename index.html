@@ -824,6 +824,14 @@ thead th.ph-sticky{z-index:40;background:#f8fafc;}
 .bg-lic{background:var(--elite-lt);color:var(--elite);}
 .ph-time{width:78px;padding:4px 0;border-radius:6px;font-size:8.5px;font-weight:700;cursor:pointer;display:inline-block;text-align:center;background:var(--bg);color:var(--impulsa);border:1px solid var(--border);margin-top:3px;}
 .ph-time-off{background:#f1f5f9;color:#94a3b8;font-style:italic;}
+/* Horario en negrita y con color propio según la franja (mismos colores que el PDF) */
+.ph-time.ph-h07,.ph-card-time.ph-h07{background:#fff7ed;color:#c2410c;border-color:#fdba74;font-weight:800;}
+.ph-time.ph-h08,.ph-card-time.ph-h08{background:#eff6ff;color:#1d4ed8;border-color:#93c5fd;font-weight:800;}
+.ph-time.ph-h11,.ph-card-time.ph-h11{background:#fff1f2;color:#be123c;border-color:#fda4af;font-weight:800;}
+.ph-time.ph-h07,.ph-time.ph-h08,.ph-time.ph-h11{font-size:9px;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+[data-theme="dark"] .ph-time.ph-h07,[data-theme="dark"] .ph-card-time.ph-h07{background:#3b1f0e;color:#fdba74;border-color:#7c3a12;}
+[data-theme="dark"] .ph-time.ph-h08,[data-theme="dark"] .ph-card-time.ph-h08{background:#0f2242;color:#93c5fd;border-color:#1e40af;}
+[data-theme="dark"] .ph-time.ph-h11,[data-theme="dark"] .ph-card-time.ph-h11{background:#3f0f1c;color:#fda4af;border-color:#9f1239;}
 .ph-foot td{background:var(--bg);font-size:10px;font-weight:700;padding:7px 5px;border-top:2px solid var(--border);text-align:center;}
 .ph-cnt-valid{background:#d1fae5;color:#065f46;padding:3px 8px;border-radius:6px;display:inline-block;}
 .ph-cnt-invalid{background:#fdeaea;color:var(--danger);padding:3px 8px;border-radius:6px;display:inline-block;}
@@ -6961,6 +6969,15 @@ let phSupervisores=[
   {n:'Sol Celli',        d:'Yanina Pacheco',        g:'B',h:'08:00 a 16:00'},
 ];
 const phHorarios=['07:00 a 15:00','08:00 a 16:00','11:00 a 19:00','-'];
+// Clase de color por franja horaria (en pantalla y en las tarjetas del celu)
+const PH_HOR_CLASS = {'07:00 a 15:00':'ph-h07','08:00 a 16:00':'ph-h08','11:00 a 19:00':'ph-h11'};
+function phPaintTime(el){
+  if(!el) return;
+  const t=el.innerText.trim();
+  Object.values(PH_HOR_CLASS).forEach(c=>el.classList.remove(c));
+  if(PH_HOR_CLASS[t]) el.classList.add(PH_HOR_CLASS[t]);
+  el.classList.toggle('ph-time-off',t==='-');
+}
 let phSavedData={};
 
 // Genera los días laborables (L a V) de la planilla de horarios, siempre en
@@ -7052,7 +7069,7 @@ function phRenderCards(days) {
         <span class="ph-card-dlbl">${diasL[d.getDay()-1]}${d.getDate()}</span>
         <span style="background:${bg};color:${fg};padding:3px 2px;border-radius:5px;font-size:8px;font-weight:700;text-align:center;width:100%;cursor:pointer;"
           onclick="phToggleSt(document.getElementById('ph-st-${sIdx}-${dIdx}'));phRenderCards(phCurrentDays)">${st==='HomeOffice'?'HO':st==='Presencial'?'Pres':'Lic'}</span>
-        <span class="ph-card-time${tm==='-'?' off':''}" onclick="phToggleTm(document.getElementById('ph-tm-${sIdx}-${dIdx}'));phRenderCards(phCurrentDays)">${licEsc(tm)}</span>
+        <span class="ph-card-time${tm==='-'?' off':''} ${PH_HOR_CLASS[tm]||''}" onclick="phToggleTm(document.getElementById('ph-tm-${sIdx}-${dIdx}'));phRenderCards(phCurrentDays)">${licEsc(tm)}</span>
       </div>`;
     });
     html += `</div></div>`;
@@ -7096,6 +7113,7 @@ function phPresDia(dIdx){
   return { p, tarde, ok: p >= PH_MIN_PRES };
 }
 function phUpdateCounters(){
+  document.querySelectorAll('#ph-body .ph-time').forEach(phPaintTime);
   const n=document.querySelectorAll('#ph-header th').length-1;
   for(let j=0;j<n;j++){
     const {p, tarde, ok} = phPresDia(j);
@@ -7182,7 +7200,7 @@ function phExportPDF() {
 
   const diasL=['L','M','M','J','V'];
   const stateColor = {'HomeOffice':['#f5effd','#7c3aed'],'Presencial':['#d1fae5','#059669'],'LIC':['#eef0f8','#4a537d']};
-  const horColor = {'07:00 a 15:00':['#fff7ed','#c2410c'],'08:00 a 16:00':['#eff6ff','#1d4ed8'],'11:00 a 19:00':['#fdf4ff','#7e22ce'],'-':['#f1f5f9','#94a3b8']};
+  const horColor = {'07:00 a 15:00':['#fff7ed','#c2410c'],'08:00 a 16:00':['#eff6ff','#1d4ed8'],'11:00 a 19:00':['#fff1f2','#be123c'],'-':['#f1f5f9','#94a3b8']};
 
   // Group by week
   const semanas=[]; let sem=[];
@@ -7256,7 +7274,7 @@ function phExportPDF() {
   .av{display:inline-flex;width:20px;height:20px;border-radius:50%;background:#eef0f8;color:#4a537d;font-size:7px;font-weight:800;align-items:center;justify-content:center;margin-right:5px;vertical-align:middle;}
   .dup-lbl{font-size:8px;color:#94a3b8;font-style:italic;margin-top:1px;}
   .ch{display:inline-block;padding:3px 5px;border-radius:5px;font-size:9px;font-weight:700;white-space:nowrap;line-height:1.3;display:block;margin-bottom:2px;}
-  .ht{display:inline-block;padding:2px 5px;border-radius:4px;font-size:8px;font-weight:600;white-space:nowrap;}
+  .ht{display:inline-block;padding:2px 5px;border-radius:4px;font-size:8.5px;font-weight:800;white-space:nowrap;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
   .guards-card{background:white;border-radius:10px;overflow:hidden;border:1px solid #e2e8f0;box-shadow:0 1px 3px rgba(0,0,0,.06);}
   .guards-title{background:#4a537d;color:white;padding:9px 14px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;}
   .pb{text-align:center;margin:14px 0 4px;}.pb button{background:#4a537d;color:white;border:none;border-radius:8px;padding:9px 24px;font-size:12px;font-weight:700;cursor:pointer;}
@@ -7274,7 +7292,7 @@ function phExportPDF() {
     <span style="margin-left:12px;font-size:9px;font-weight:700;color:#64748b;">HORARIOS:</span>
     <span class="leg-item" style="background:#fff7ed;color:#c2410c;">07:00 a 15:00</span>
     <span class="leg-item" style="background:#eff6ff;color:#1d4ed8;">08:00 a 16:00</span>
-    <span class="leg-item" style="background:#fdf4ff;color:#7e22ce;">11:00 a 19:00</span>
+    <span class="leg-item" style="background:#fff1f2;color:#be123c;">11:00 a 19:00</span>
     <span class="leg-item" style="background:#f1f5f9;color:#94a3b8;">- (Licencia)</span>
   </div>
   ${tablaHTML}
@@ -7414,7 +7432,8 @@ async function phExportExcel(btn) {
         const c = row.getCell(di+2);
         c.value = st === 'LIC' ? 'Lic' : tm;
         c.fill = fill(fillByEstado[st] || C.home);
-        c.font = st === 'LIC' ? {size:9, italic:true, color:{argb:C.licTxt}} : {size:9, bold: st === 'Presencial'};
+        const horTxt = {'07:00 a 15:00':'FFC2410C','08:00 a 16:00':'FF1D4ED8','11:00 a 19:00':'FFBE123C'}[tm];
+        c.font = st === 'LIC' ? {size:9, italic:true, color:{argb:C.licTxt}} : (horTxt ? {size:9, bold:true, color:{argb:horTxt}} : {size:9, bold: st === 'Presencial'});
         c.alignment = {horizontal:'center', vertical:'middle'};
         c.border = allBorders;
       });
