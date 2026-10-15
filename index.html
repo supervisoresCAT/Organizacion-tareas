@@ -856,6 +856,70 @@ thead th.ph-sticky{z-index:40;background:#f8fafc;}
 .ph-foot td{background:var(--bg);font-size:10px;font-weight:700;padding:7px 5px;border-top:2px solid var(--border);text-align:center;}
 .ph-cnt-valid{background:#d1fae5;color:#065f46;padding:3px 8px;border-radius:6px;display:inline-block;}
 .ph-cnt-invalid{background:#fdeaea;color:var(--danger);padding:3px 8px;border-radius:6px;display:inline-block;}
+/* ── Distribución de anexos (debajo del conteo de presenciales) ── */
+.anx-central{--anx:#0f9f7a;--anx-lt:#e3f6ef;--anx-bd:#9fdcc6;--anx-tx:#0b5e48;}
+.anx-mayo{--anx:#d8643a;--anx-lt:#fbece5;--anx-bd:#f2b9a2;--anx-tx:#8a3517;}
+.anx-palomitas{--anx:#6d5bd0;--anx-lt:#efecfc;--anx-bd:#c4bbf2;--anx-tx:#3f3290;}
+[data-theme="dark"] .anx-central{--anx:#22b98e;--anx-lt:rgba(34,185,142,.14);--anx-bd:rgba(34,185,142,.45);--anx-tx:#8fe3c8;}
+[data-theme="dark"] .anx-mayo{--anx:#e7794f;--anx-lt:rgba(231,121,79,.14);--anx-bd:rgba(231,121,79,.45);--anx-tx:#f6b79d;}
+[data-theme="dark"] .anx-palomitas{--anx:#8b7be6;--anx-lt:rgba(139,123,230,.16);--anx-bd:rgba(139,123,230,.5);--anx-tx:#c9c0f7;}
+.ph-anx-row td{background:var(--white);padding:3px 4px;vertical-align:middle;}
+.ph-anx-row.ph-anx-first td{border-top:1px solid var(--border);padding-top:7px;}
+.ph-anx-row:not(.ph-anx-first) td{padding-bottom:7px;}
+.ph-anx-row td.ph-sticky{border-top:1px solid var(--border);}
+.ph-anx-title td{background:var(--bg);padding:10px 12px 8px;border-top:2px solid var(--border);}
+.ph-anx-ttl{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--text);}
+.ph-anx-hint{font-size:10px;color:var(--muted);font-weight:600;}
+.ph-anx-name{display:flex;align-items:center;gap:8px;font-weight:800;font-size:12px;color:var(--anx-tx);}
+.ph-anx-dot{width:10px;height:10px;border-radius:50%;background:var(--anx);box-shadow:0 0 0 3px var(--anx-lt);flex:0 0 10px;}
+.ph-anx-sub{font-size:9px;color:var(--muted);font-weight:600;margin:2px 0 0 18px;}
+.ph-anx-seg{display:flex;flex-direction:column;gap:4px;padding:1px 2px;}
+.ph-anx-slot{position:relative;display:flex;align-items:center;justify-content:center;gap:8px;padding:4px 9px;border-radius:9px;background:var(--anx-lt);border:1px solid var(--anx-bd);cursor:pointer;height:48px;box-sizing:border-box;transition:transform .12s ease,box-shadow .12s ease;}
+.ph-anx-meta{display:flex;align-items:center;gap:5px;}
+.ph-anx-slot:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(15,23,42,.12);}
+.ph-anx-slot .nm{font-size:11px;font-weight:800;color:var(--anx-tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ph-anx-slot .ph-time{margin:0;width:auto;padding:2px 7px;font-size:8.5px;white-space:nowrap;flex-shrink:0;}
+.ph-anx-slot .nm{max-width:100%;}
+.ph-anx-slot .mot{font-size:8px;font-weight:800;color:#b07106;text-transform:uppercase;letter-spacing:.03em;white-space:nowrap;}
+.ph-anx-slot.empty{background:transparent;border:1.5px dashed var(--border);color:var(--muted);font-size:10px;font-weight:700;}
+.ph-anx-slot.empty:hover{border-color:var(--anx);color:var(--anx-tx);background:var(--anx-lt);}
+.ph-anx-slot.ovr{background:#fff7e6;border:1.5px dashed #e0a43a;}
+.ph-anx-slot.ovr .nm{color:#8a5a00;}
+[data-theme="dark"] .ph-anx-slot.ovr{background:rgba(224,164,58,.12);}
+[data-theme="dark"] .ph-anx-slot.ovr .nm,[data-theme="dark"] .ph-anx-slot .mot{color:#f2c46d;}
+.ph-anx-alert{position:absolute;top:-6px;right:-6px;width:17px;height:17px;border-radius:50%;background:var(--danger);color:#fff;font-size:10.5px;font-weight:900;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px var(--white);line-height:1;}
+.ph-anx-alert-inline{position:static;display:inline-flex;vertical-align:middle;width:15px;height:15px;font-size:9.5px;box-shadow:none;}
+.ph-anx-seg.narrow .ph-anx-slot{flex-direction:column;gap:2px;padding:3px;}
+.ph-anx-seg.narrow .ph-anx-meta{flex-direction:column;gap:1px;}
+.ph-anx-seg.narrow .ph-anx-slot .ph-time{padding:1px 6px;}
+.ph-anx-seg.narrow .nm{font-size:10px;}
+.ph-anx-seg.narrow .ph-anx-slot .mot{font-size:7.5px;}
+.ph-anx-pop{position:absolute;z-index:1001;width:310px;max-width:calc(100vw - 16px);background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow-lg);overflow:hidden;animation:phAnxIn .14s ease-out;}
+@keyframes phAnxIn{from{opacity:0;transform:translateY(-4px) scale(.98);}to{opacity:1;transform:none;}}
+.ph-anx-pop-hd{padding:12px 14px 10px;background:var(--anx-lt);border-bottom:1px solid var(--anx-bd);}
+.ph-anx-pop-ttl{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:800;color:var(--anx-tx);}
+.ph-anx-pop-sub{font-size:10.5px;color:var(--muted);font-weight:600;margin:3px 0 0 18px;}
+.ph-anx-tabs{display:flex;gap:4px;padding:10px 14px 0;}
+.ph-anx-tab{flex:1;border:1px solid var(--border);background:var(--bg);color:var(--text);border-radius:8px;padding:6px 4px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;}
+.ph-anx-tab.on{background:var(--anx);border-color:var(--anx);color:#fff;}
+.ph-anx-body{padding:10px 14px 12px;display:flex;flex-direction:column;gap:10px;}
+.ph-anx-lbl{font-size:9.5px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px;}
+.ph-anx-body select{width:100%;padding:7px 9px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:12px;background:var(--card);color:var(--text);}
+.ph-anx-chips{display:flex;gap:4px;flex-wrap:wrap;}
+.ph-anx-chip{border:1px solid var(--border);background:var(--bg);border-radius:8px;padding:5px 8px;font-size:10.5px;font-weight:700;cursor:pointer;color:var(--text);font-family:inherit;}
+.ph-anx-chip.on{background:var(--anx);border-color:var(--anx);color:#fff;}
+.ph-anx-chip.has{box-shadow:inset 0 -3px 0 #e0a43a;}
+.ph-anx-hbtn{border:none;cursor:pointer;font-family:inherit;margin:0!important;width:auto!important;padding:6px 14px!important;opacity:.4;}
+.ph-anx-hbtn.on{opacity:1;box-shadow:0 0 0 2px var(--card),0 0 0 4px var(--anx);}
+.ph-anx-info{font-size:10.5px;color:var(--muted);font-weight:600;}
+.ph-anx-warnbox{font-size:10.5px;color:var(--danger);background:var(--danger-lt);border-radius:8px;padding:6px 8px;font-weight:600;line-height:1.4;}
+[data-theme="dark"] .ph-anx-warnbox{background:rgba(231,76,60,.14);}
+.ph-anx-actions{display:flex;justify-content:space-between;gap:8px;}
+.ph-anx-mrow{display:grid;grid-template-columns:92px 1fr;gap:6px;align-items:center;padding:6px 12px;}
+.ph-anx-mrow .ph-anx-name{font-size:11px;}
+.ph-anx-mslots{display:flex;flex-wrap:wrap;gap:4px;}
+.ph-anx-mslots .ph-anx-slot,.ph-anx-mchg .ph-anx-slot{height:auto;min-height:30px;padding:4px 8px;}
+.ph-anx-mchg{padding:4px 12px 10px;display:flex;flex-direction:column;gap:4px;}
 .ph-guards-table{width:100%;border-collapse:collapse;font-size:12px;}
 .ph-guards-table td{padding:10px 12px;border-bottom:1px solid var(--border);}
 .ph-guards-table td:first-child{font-weight:700;color:var(--impulsa);width:170px;}
@@ -2244,6 +2308,9 @@ const AUDIT_FIELD_LABELS = {
   cantidad: 'Cantidad de conversaciones',
   modo: 'Tipo (Monitoreo/Inbox)',
   role_id: 'Rol asignado',
+  anexos: 'Anexos',
+  semanas: 'Semana del',
+  cambios: 'Cambio de un día',
 };
 // Campos puramente técnicos (clases CSS, ids internos) que nunca aportan nada al detalle — se ignoran.
 const AUDIT_IGNORE_FIELDS = new Set(['stClass']);
@@ -7090,6 +7157,8 @@ function phRender(){
     body.innerHTML+=row+'</tr>';
   });
   phRenderSabados(parseInt(y),parseInt(m),days[0].getDate());
+  phAnxClose();
+  phAnexos = {semanas:{}, cambios:{}}; // cada mes arranca vacío; phLoadSaved trae lo guardado
   phLoadSaved(document.getElementById('ph-month').value);
   phUpdateCounters();
   phRenderCards(days);
@@ -7132,6 +7201,7 @@ function phRenderCards(days) {
     });
     html += `</div></div>`;
   });
+  html += phAnxCardsHTML();
   html += '</div>';
 
   // Insert after the ph-wrap
@@ -7206,6 +7276,7 @@ function phUpdateCounters(){
       td.innerHTML=`<span class="${ok?'ph-cnt-valid':'ph-cnt-invalid'}" title="${tip}">${ok?'✓':'✗'} ${p}</span>${tarde?`<div class="ph-foot-extra">+${tarde} pres. 11 a 19</div>`:''}<div class="ph-foot-extra" title="${ho} en HomeOffice · ${lic} con licencia">🏠 ${ho}${lic?` · 🌴 ${lic}`:''}</div>`;
     }
   }
+  phRenderAnexos(); // las alertas de anexos dependen de quién está presencial cada día
 }
 function phAutoAB(){
   const n=document.querySelectorAll('#ph-header th').length-1;
@@ -7252,6 +7323,7 @@ async function phSave(sinConfirmar){
     }
   });
   const data={states,guards:document.getElementById('ph-guards-body').innerHTML,saturdays:document.getElementById('ph-sab-body').innerHTML,duplas:phSupervisores.map(s=>s.d)};
+  if (phAnxHasData()) data.anexos = JSON.parse(JSON.stringify(phAnexos)); // campo nuevo, aditivo: los meses viejos no lo tienen
   phSavedData[month]=data;
   setSyncStatus('saving');
   const ok=await sbUpsert('js_dist_anual',{key:'horarios_'+month,data:JSON.stringify(data),updated_at:new Date().toISOString()});
@@ -7271,8 +7343,261 @@ function phLoadSaved(month){
   });
   if(saved.guards)document.getElementById('ph-guards-body').innerHTML=saved.guards;
   if(saved.saturdays){document.getElementById('ph-sab-body').innerHTML=saved.saturdays;document.querySelectorAll('#ph-sab-body td').forEach(td=>td.setAttribute('contenteditable','true'));}
+  if(saved.anexos){const a=JSON.parse(JSON.stringify(saved.anexos));phAnexos={semanas:a.semanas||{},cambios:a.cambios||{}};}
   phUpdateCounters();
 }
+
+// ═══════════════════════════════════════════════════════════════
+// PLANILLA HORARIOS — DISTRIBUCIÓN DE ANEXOS
+// Se guarda dentro del mismo registro del mes (horarios_AAAA-MM) en un campo
+// nuevo "anexos" = { semanas: { 'dd/mm' (lunes): { Anexo: [{supervisor,horario}|null, ...] } },
+//                    cambios: { 'dd/mm|Anexo|puesto': {supervisor,horario,motivo} } }
+// Los cambios de un día (licencia / parte médico) pisan la asignación semanal solo ese día.
+// ═══════════════════════════════════════════════════════════════
+const PH_ANEXOS = [
+  {id:'central',   k:'Central',     slots:1, def:'07:00 a 15:00'},
+  {id:'mayo',      k:'1ro de Mayo', slots:2, def:'08:00 a 16:00'},
+  {id:'palomitas', k:'Palomitas',   slots:2, def:'08:00 a 16:00'},
+];
+const PH_ANX_HORARIOS = ['07:00 a 15:00','08:00 a 16:00']; // 11 a 19 es guardia: no va a anexos
+const PH_ANX_MOTIVOS = ['Licencia','Parte médico','Guardia'];
+const PH_DIAS_L = ['Lun','Mar','Mié','Jue','Vie'];
+let phAnexos = {semanas:{}, cambios:{}};
+let phAnxPop = null;
+
+function phDKey(d){ return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`; }
+function phDLbl(dIdx){ const d=phCurrentDays[dIdx]; return d ? `${PH_DIAS_L[d.getDay()-1]} ${d.getDate()}` : ''; }
+function phAnxShortHor(h){ return (h||'').replace(/:00/g,''); }
+function phAnxShortName(n){ const p=(n||'').trim().split(/\s+/); return p.length>1 ? `${p[0]} ${p[1][0]}.` : (p[0]||''); }
+function phAnxHasData(){
+  const s=phAnexos.semanas||{}, c=phAnexos.cambios||{};
+  return Object.keys(c).length>0 || Object.values(s).some(w=>Object.values(w||{}).some(arr=>(arr||[]).some(x=>x&&x.supervisor)));
+}
+function phAnxWeeks(){
+  const {num}=phWeekClasses(phCurrentDays); const map=new Map();
+  phCurrentDays.forEach((d,i)=>{ if(!map.has(num[i])) map.set(num[i],{num:num[i],key:phDKey(d),dIdxs:[]}); map.get(num[i]).dIdxs.push(i); });
+  return [...map.values()];
+}
+function phAnxWeekOf(dIdx){ return phAnxWeeks().find(w=>w.dIdxs.includes(dIdx)); }
+function phAnxCKey(dIdx,ak,slot){ return `${phDKey(phCurrentDays[dIdx])}|${ak}|${slot}`; }
+function phAnxBase(wkKey,ak,slot){ const w=phAnexos.semanas[wkKey]; const arr=w&&w[ak]; return (arr&&arr[slot]&&arr[slot].supervisor)?arr[slot]:null; }
+function phAnxEff(dIdx,wkKey,ak,slot){
+  const c=phAnexos.cambios[phAnxCKey(dIdx,ak,slot)];
+  if(c&&c.supervisor) return {...c, override:true};
+  return phAnxBase(wkKey,ak,slot);
+}
+// Estado del supervisor en la grilla de arriba ese día ('Presencial', 'HomeOffice', 'LIC') y su horario
+function phSupDia(name,dIdx){
+  const i=phSupervisores.findIndex(s=>s.n===name); if(i<0) return null;
+  const st=document.getElementById(`ph-st-${i}-${dIdx}`), tm=document.getElementById(`ph-tm-${i}-${dIdx}`);
+  return {st:st?st.innerText.trim():'', tm:tm?tm.innerText.trim():''};
+}
+// Cuántas veces aparece cada supervisor en anexos por día (para avisar si quedó en dos lugares)
+function phAnxDupMap(){
+  const m={}; const weeks=phAnxWeeks();
+  weeks.forEach(w=>w.dIdxs.forEach(di=>{
+    m[di]={};
+    PH_ANEXOS.forEach(a=>{ for(let s=0;s<a.slots;s++){ const e=phAnxEff(di,w.key,a.k,s); if(e) m[di][e.supervisor]=(m[di][e.supervisor]||0)+1; } });
+  }));
+  return m;
+}
+function phAnxIssues(name,dIdxs,dup){
+  const out=[];
+  dIdxs.forEach(di=>{
+    const sd=phSupDia(name,di);
+    if(sd && sd.st && sd.st!=='Presencial') out.push(`${phDLbl(di)}: figura ${sd.st==='LIC'?'con licencia':'en HomeOffice'}`);
+    if(dup && dup[di] && dup[di][name]>1) out.push(`${phDLbl(di)}: está asignado en dos anexos`);
+  });
+  return out;
+}
+function phAnxAlertBadge(issues){
+  return issues.length ? `<span class="ph-anx-alert" title="${licEsc(issues.join('\n'))}">!</span>` : '';
+}
+function phAnxSlotHTML(a,s,w,ds,narrow,dup){
+  const eff=phAnxEff(ds[0],w.key,a.k,s);
+  const open=(mode)=>`phAnxOpen(event,'${a.id}',${s},${ds[0]},'${mode}')`;
+  if(!eff) return `<div class="ph-anx-slot empty" onclick="${open('semana')}" title="Asignar supervisor y horario de la semana">＋ ${a.slots>1?`Puesto ${s+1}`:'Asignar'}</div>`;
+  const issues=phAnxIssues(eff.supervisor,ds,dup);
+  const tip=[`${eff.supervisor} · ${phAnxShortHor(eff.horario)}`, eff.override?`Cambio de un día: ${eff.motivo||'Cambio'}`:'Asignación de la semana', ...issues.map(x=>'⚠ '+x)].join('\n');
+  return `<div class="ph-anx-slot${eff.override?' ovr':''}${issues.length?' warn':''}" title="${licEsc(tip)}" onclick="${open(eff.override?'dia':'semana')}">`+
+    `<span class="nm">${licEsc(narrow?phAnxShortName(eff.supervisor):eff.supervisor)}</span>`+
+    `<span class="ph-anx-meta"><span class="ph-time ${PH_HOR_CLASS[eff.horario]||''}">${licEsc(phAnxShortHor(eff.horario))}</span>`+
+    `${eff.override?`<span class="mot">${licEsc(eff.motivo||'Cambio')}</span>`:''}</span>${phAnxAlertBadge(issues)}</div>`;
+}
+// Filas de anexos en el pie de la tabla: una línea por puesto. Los días con la misma asignación
+// se agrupan en un solo bloque; un cambio de un día parte solo ese puesto y se ve en amarillo punteado.
+function phRenderAnexos(){
+  const table=document.getElementById('ph-table'); if(!table||!table.tFoot||!phCurrentDays.length) return;
+  const tfoot=table.tFoot;
+  tfoot.querySelectorAll('.ph-anx-row').forEach(r=>r.remove());
+  const weeks=phAnxWeeks(), wk=phWeekClasses(phCurrentDays), N=phCurrentDays.length, dup=phAnxDupMap();
+  let html=`<tr class="ph-anx-row ph-anx-title"><td class="ph-sticky"><div class="ph-anx-ttl">🏢 Distribución de anexos</div><div class="ph-anx-hint">Semanal · se cubre con presenciales</div></td>`+
+    `<td colspan="${N}" class="ph-anx-hint" style="text-align:left;padding-left:14px;"><span style="position:sticky;left:270px;">Tocá un puesto para asignarlo en la semana. Licencia, parte médico o guardia: <b>Solo un día</b>. <span class="ph-anx-alert ph-anx-alert-inline">!</span> = no figura presencial ese día.</span></td></tr>`;
+  PH_ANEXOS.forEach(a=>{
+    for(let s=0;s<a.slots;s++){
+      html+=`<tr class="ph-anx-row anx-${a.id}${s===0?' ph-anx-first':''}">`;
+      if(s===0) html+=`<td class="ph-sticky" rowspan="${a.slots}"><div class="ph-anx-name"><span class="ph-anx-dot"></span>${a.k}</div><div class="ph-anx-sub">${a.slots===1?'1 supervisor':a.slots+' supervisores'} · sugerido ${phAnxShortHor(a.def)}</div></td>`;
+      weeks.forEach(w=>{
+        const segs=[];
+        w.dIdxs.forEach(di=>{
+          const sig=JSON.stringify(phAnxEff(di,w.key,a.k,s));
+          const last=segs[segs.length-1];
+          if(last&&last.sig===sig) last.ds.push(di); else segs.push({sig,ds:[di]});
+        });
+        segs.forEach(sg=>{
+          const narrow=sg.ds.length<=2;
+          html+=`<td colspan="${sg.ds.length}" class="${wk.cls[sg.ds[0]]}"><div class="ph-anx-seg${narrow?' narrow':''}">${phAnxSlotHTML(a,s,w,sg.ds,narrow,dup)}</div></td>`;
+        });
+      });
+      html+='</tr>';
+    }
+  });
+  tfoot.insertAdjacentHTML('beforeend',html);
+}
+// Versión celular: una tarjeta por semana debajo de las tarjetas de supervisores
+function phAnxCardsHTML(){
+  if(!phCurrentDays.length) return '';
+  const dup=phAnxDupMap(); let html='';
+  phAnxWeeks().forEach(w=>{
+    const first=phCurrentDays[w.dIdxs[0]], last=phCurrentDays[w.dIdxs[w.dIdxs.length-1]];
+    html+=`<div class="ph-card"><div class="ph-card-header"><div><div class="ph-card-name">🏢 Anexos · Semana ${w.num}</div><div class="ph-card-dupla">${phDKey(first)} al ${phDKey(last)}</div></div></div>`;
+    const chg=[];
+    PH_ANEXOS.forEach(a=>{
+      html+=`<div class="ph-anx-mrow anx-${a.id}"><div class="ph-anx-name"><span class="ph-anx-dot"></span>${a.k}</div><div class="ph-anx-mslots">`;
+      for(let s=0;s<a.slots;s++){
+        const base=phAnxBase(w.key,a.k,s);
+        const days=w.dIdxs.filter(di=>!(phAnexos.cambios[phAnxCKey(di,a.k,s)]||{}).supervisor);
+        if(!base){ html+=`<div class="ph-anx-slot empty" onclick="phAnxOpen(event,'${a.id}',${s},${w.dIdxs[0]},'semana')">＋ ${a.slots>1?`Puesto ${s+1}`:'Asignar'}</div>`; }
+        else {
+          const iss=phAnxIssues(base.supervisor,days,dup);
+          html+=`<div class="ph-anx-slot${iss.length?' warn':''}" onclick="phAnxOpen(event,'${a.id}',${s},${w.dIdxs[0]},'semana')"><span class="nm">${licEsc(phAnxShortName(base.supervisor))}</span><span class="ph-time ${PH_HOR_CLASS[base.horario]||''}">${licEsc(phAnxShortHor(base.horario))}</span>${phAnxAlertBadge(iss)}</div>`;
+        }
+        w.dIdxs.forEach(di=>{ const c=phAnexos.cambios[phAnxCKey(di,a.k,s)]; if(c&&c.supervisor) chg.push({a,s,di,c}); });
+      }
+      html+='</div></div>';
+    });
+    if(chg.length){
+      html+='<div class="ph-anx-mchg">';
+      chg.forEach(({a,s,di,c})=>{
+        const iss=phAnxIssues(c.supervisor,[di],dup);
+        html+=`<div class="anx-${a.id}"><div class="ph-anx-slot ovr${iss.length?' warn':''}" style="justify-content:flex-start;" onclick="phAnxOpen(event,'${a.id}',${s},${di},'dia')"><span class="mot">${phDLbl(di)}</span><span class="nm">${a.k}: ${licEsc(phAnxShortName(c.supervisor))}</span><span class="ph-time ${PH_HOR_CLASS[c.horario]||''}">${licEsc(phAnxShortHor(c.horario))}</span><span class="mot">${licEsc(c.motivo||'Cambio')}</span>${phAnxAlertBadge(iss)}</div></div>`;
+      });
+      html+='</div>';
+    }
+    html+='</div>';
+  });
+  return html;
+}
+
+// ── Editor (popover) ──
+function phAnxOpen(ev,aid,slot,dIdx,mode){
+  ev.stopPropagation(); phCloseHMenu(); phAnxClose();
+  const a=PH_ANEXOS.find(x=>x.id===aid), w=phAnxWeekOf(dIdx); if(!a||!w) return;
+  phAnxPop={a,slot,w,dIdx,mode,err:''};
+  phAnxLoadSel();
+  const el=document.createElement('div'); el.className=`ph-anx-pop anx-${a.id}`; el.id='ph-anx-pop';
+  document.body.appendChild(el); phAnxPaint();
+  const r=ev.currentTarget.getBoundingClientRect();
+  const top=Math.max(window.scrollY+8, Math.min(r.bottom+window.scrollY+6, window.scrollY+window.innerHeight-el.offsetHeight-8));
+  el.style.top=top+'px';
+  el.style.left=Math.max(8,Math.min(r.left+window.scrollX, window.scrollX+window.innerWidth-el.offsetWidth-8))+'px';
+}
+// Carga en el editor lo que ya está guardado para el modo/día elegido
+function phAnxLoadSel(){
+  const p=phAnxPop, base=phAnxBase(p.w.key,p.a.k,p.slot);
+  if(p.mode==='semana'){ p.sup=base?base.supervisor:''; p.hor=base?base.horario:p.a.def; p.mot=''; }
+  else { const c=phAnexos.cambios[phAnxCKey(p.dIdx,p.a.k,p.slot)]; p.sup=c?c.supervisor:''; p.hor=c?c.horario:(base?base.horario:p.a.def); p.mot=(c&&PH_ANX_MOTIVOS.includes(c.motivo))?c.motivo:'Licencia'; }
+  p.err='';
+}
+function phAnxSupOptions(){
+  const p=phAnxPop, names=phSupervisores.map(s=>s.n);
+  if(p.sup && !names.includes(p.sup)) names.push(p.sup);
+  const pres=[], resto=[];
+  if(p.mode==='semana'){
+    const len=p.w.dIdxs.length;
+    names.forEach(n=>{ const c=p.w.dIdxs.filter(di=>(phSupDia(n,di)||{}).st==='Presencial').length; (c?pres:resto).push({n,lbl:c?`${n} · presencial ${c}/${len} días`:n,c}); });
+    pres.sort((x,y)=>y.c-x.c);
+  } else {
+    names.forEach(n=>{ const sd=phSupDia(n,p.dIdx)||{}; if(sd.st==='Presencial') pres.push({n,lbl:`${n} · ${phAnxShortHor(sd.tm)}`}); else resto.push({n,lbl:sd.st?`${n} · ${sd.st==='LIC'?'licencia':'HomeOffice'}`:n}); });
+  }
+  const opt=o=>`<option value="${licEsc(o.n)}"${o.n===p.sup?' selected':''}>${licEsc(o.lbl)}</option>`;
+  return `<option value="">— Elegir supervisor —</option>`+
+    (pres.length?`<optgroup label="${p.mode==='semana'?'Presenciales esa semana':'Presenciales ese día'}">${pres.map(opt).join('')}</optgroup>`:'')+
+    (resto.length?`<optgroup label="Resto">${resto.map(opt).join('')}</optgroup>`:'');
+}
+function phAnxPaint(){
+  const el=document.getElementById('ph-anx-pop'), p=phAnxPop; if(!el||!p) return;
+  const first=phCurrentDays[p.w.dIdxs[0]], last=phCurrentDays[p.w.dIdxs[p.w.dIdxs.length-1]];
+  const base=phAnxBase(p.w.key,p.a.k,p.slot);
+  const hasChg=!!(phAnexos.cambios[phAnxCKey(p.dIdx,p.a.k,p.slot)]||{}).supervisor;
+  // Días afectados por la selección actual (la semana sin los días con cambio, o el día elegido)
+  const afect=p.mode==='semana' ? p.w.dIdxs.filter(di=>!(phAnexos.cambios[phAnxCKey(di,p.a.k,p.slot)]||{}).supervisor) : [p.dIdx];
+  const iss=p.sup ? phAnxIssues(p.sup,afect,null) : [];
+  let h=`<div class="ph-anx-pop-hd"><div class="ph-anx-pop-ttl"><span class="ph-anx-dot"></span>${p.a.k}${p.a.slots>1?` · Puesto ${p.slot+1}`:''}</div>`+
+    `<div class="ph-anx-pop-sub">Semana ${p.w.num} · ${phDKey(first)} al ${phDKey(last)}</div></div>`+
+    `<div class="ph-anx-tabs"><button type="button" class="ph-anx-tab${p.mode==='semana'?' on':''}" onclick="phAnxSetMode('semana')">Toda la semana</button>`+
+    `<button type="button" class="ph-anx-tab${p.mode==='dia'?' on':''}" onclick="phAnxSetMode('dia')">Solo un día</button></div><div class="ph-anx-body">`;
+  if(p.mode==='dia'){
+    h+=`<div><div class="ph-anx-lbl">Día</div><div class="ph-anx-chips">`+
+      p.w.dIdxs.map(di=>`<button type="button" class="ph-anx-chip${di===p.dIdx?' on':''}${(phAnexos.cambios[phAnxCKey(di,p.a.k,p.slot)]||{}).supervisor?' has':''}" onclick="phAnxSetDay(${di})">${phDLbl(di)}</button>`).join('')+
+      `</div></div><div class="ph-anx-info">Asignado en la semana: ${base?`<b>${licEsc(base.supervisor)}</b> (${phAnxShortHor(base.horario)})`:'nadie todavía'}</div>`;
+  }
+  h+=`<div><div class="ph-anx-lbl">${p.mode==='dia'?'Quién cubre ese día':'Supervisor'}</div><select onchange="phAnxSetSup(this.value)">${phAnxSupOptions()}</select></div>`+
+    `<div><div class="ph-anx-lbl">Horario</div><div class="ph-anx-chips">`+
+    PH_ANX_HORARIOS.map(hh=>`<button type="button" class="ph-time ph-anx-hbtn ${PH_HOR_CLASS[hh]}${hh===p.hor?' on':''}" onclick="phAnxSetHor('${hh}')">${phAnxShortHor(hh)}</button>`).join('')+`</div></div>`;
+  if(p.mode==='dia'){
+    h+=`<div><div class="ph-anx-lbl">Motivo</div><div class="ph-anx-chips">`+
+      PH_ANX_MOTIVOS.map(m=>`<button type="button" class="ph-anx-chip${m===p.mot?' on':''}" onclick="phAnxSetMot('${m}')">${m}</button>`).join('')+`</div></div>`;
+  }
+  if(iss.length) h+=`<div class="ph-anx-warnbox">⚠️ ${iss.map(licEsc).join('<br>⚠️ ')}</div>`;
+  if(p.err) h+=`<div class="ph-anx-warnbox">${licEsc(p.err)}</div>`;
+  const canRemove = p.mode==='semana' ? !!base : hasChg;
+  h+=`<div class="ph-anx-actions">${canRemove?`<button type="button" class="btn" onclick="phAnxRemove()">${p.mode==='semana'?'Quitar':'Quitar cambio'}</button>`:'<span></span>'}`+
+    `<button type="button" class="btn btn-primary" onclick="phAnxSave()">Listo</button></div></div>`;
+  el.innerHTML=h;
+}
+function phAnxSetMode(m){ if(!phAnxPop) return; phAnxPop.mode=m; phAnxLoadSel(); phAnxPaint(); }
+function phAnxSetDay(di){ if(!phAnxPop) return; phAnxPop.dIdx=di; phAnxLoadSel(); phAnxPaint(); }
+function phAnxSetHor(h){ if(!phAnxPop) return; phAnxPop.hor=h; phAnxPaint(); }
+function phAnxSetMot(m){ if(!phAnxPop) return; phAnxPop.mot=m; phAnxPaint(); }
+// Al elegir supervisor, sugiere el horario que tiene en la grilla (si es 07 a 15 u 08 a 16)
+function phAnxSetSup(n){
+  const p=phAnxPop; if(!p) return; p.sup=n; p.err='';
+  if(n){
+    const dias=p.mode==='semana'?p.w.dIdxs:[p.dIdx];
+    for(const di of dias){ const sd=phSupDia(n,di); if(sd&&sd.st==='Presencial'&&PH_ANX_HORARIOS.includes(sd.tm)){ p.hor=sd.tm; break; } }
+  }
+  phAnxPaint();
+}
+function phAnxSave(){
+  const p=phAnxPop; if(!p) return;
+  if(!p.sup){ p.err='Elegí un supervisor (o usá "Quitar").'; phAnxPaint(); return; }
+  if(p.mode==='semana'){
+    const w=phAnexos.semanas[p.w.key]=phAnexos.semanas[p.w.key]||{};
+    const arr=w[p.a.k]=w[p.a.k]||[];
+    while(arr.length<p.a.slots) arr.push(null);
+    arr[p.slot]={supervisor:p.sup, horario:p.hor};
+  } else {
+    phAnexos.cambios[phAnxCKey(p.dIdx,p.a.k,p.slot)]={supervisor:p.sup, horario:p.hor, motivo:p.mot||'Licencia'};
+  }
+  phAnxChanged();
+}
+function phAnxRemove(){
+  const p=phAnxPop; if(!p) return;
+  if(p.mode==='semana'){
+    const w=phAnexos.semanas[p.w.key], arr=w&&w[p.a.k];
+    if(arr){ arr[p.slot]=null; if(!arr.some(Boolean)) delete w[p.a.k]; if(!Object.keys(w).length) delete phAnexos.semanas[p.w.key]; }
+  } else delete phAnexos.cambios[phAnxCKey(p.dIdx,p.a.k,p.slot)];
+  phAnxChanged();
+}
+function phAnxChanged(){ phAnxClose(); phMarkDirty(); phRenderAnexos(); phRenderCards(phCurrentDays); }
+function phAnxClose(){ const el=document.getElementById('ph-anx-pop'); if(el) el.remove(); phAnxPop=null; }
+document.addEventListener('click', e => {
+  const el=document.getElementById('ph-anx-pop'); if(!el) return;
+  if(!e.target.isConnected || el.contains(e.target)) return; // clicks dentro (aunque se repinte) no cierran
+  phAnxClose();
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') phAnxClose(); });
 
 // ═══════════════════════════════════════════════════════════════
 // PLANILLA HORARIOS — EXPORT PDF
