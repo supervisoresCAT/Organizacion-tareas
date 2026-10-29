@@ -201,6 +201,12 @@ body{font-family:'Inter','Segoe UI',sans-serif;background:var(--bg);color:var(--
 .modal-title{font-size:15px;font-weight:800;margin-bottom:4px;color:var(--text);}
 .modal-sub{font-size:11px;color:var(--muted);margin-bottom:16px;}
 .modal-roles{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;}
+.rot-fer-box{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:9px 12px;margin-bottom:12px;font-size:11.5px;color:#92400e;font-weight:600;}
+.rot-fer-box .btn{font-size:11px;padding:6px 12px;}
+[data-theme="dark"] .rot-fer-box{background:#3a2e12;border-color:#6b5317;color:#f6c76b;}
+.rot-table th.col-day{cursor:pointer;}
+.rot-table th.feriado-head{background:#fef3c7;color:#92400e;}
+[data-theme="dark"] .rot-table th.feriado-head{background:#3a2e12;color:#f6c76b;}
 .modal-role-btn{padding:8px 10px;border-radius:9px;border:2px solid transparent;font-family:inherit;font-size:11px;font-weight:600;cursor:pointer;transition:.15s;text-align:left;}
 .modal-role-btn.selected{outline:3px solid var(--impulsa);outline-offset:1px;}
 .modal-actions{display:flex;gap:8px;}
@@ -452,6 +458,8 @@ body{font-family:'Inter','Segoe UI',sans-serif;background:var(--bg);color:var(--
 .mon-dot.on{background:var(--mon);} .mon-dot.on.inbox{background:var(--mon-inbox);}
 .mon-state{font-size:11px;font-weight:700;min-width:104px;text-align:right;white-space:nowrap;}
 .mon-state.listo{color:var(--avanza);} .mon-state.incompleto{color:#b7791f;} .mon-state.vacio{color:var(--muted);font-weight:600;}
+.mon-fecha-warn{font-size:10.5px;font-weight:600;color:#b45309;margin:-2px 0 6px;}
+.mon-fecha-warn:empty{display:none;}
 .mon-unsaved{font-size:10.5px;font-weight:700;color:#b7791f;background:var(--save-lt);padding:3px 8px;border-radius:20px;white-space:nowrap;}
 .mon-chev{color:var(--muted);font-size:12px;transition:transform .2s;flex-shrink:0;width:14px;text-align:center;}
 .mon-acc-item.open .mon-chev{transform:rotate(180deg);}
@@ -2194,6 +2202,7 @@ document.getElementById('p').addEventListener('keydown', evt => { if(evt.key==='
   <div class="modal-box">
     <div class="modal-title" id="rot-modal-title">Ajustar asignación</div>
     <div class="modal-sub" id="rot-modal-sub"></div>
+    <div class="rot-fer-box" id="rot-modal-fer"></div>
     <div class="modal-roles" id="rot-modal-roles"></div>
     <div class="modal-actions">
       <button class="btn btn-primary" onclick="rotSaveOverride()">Guardar</button>
@@ -2813,10 +2822,30 @@ function monGetAuxPlanillas(key, sup, aux) {
 // ── Qué supervisor/semana tiene cambios sin guardar (para no perder nada al cambiar de semana/supervisor) ──
 const monDirtyKeys = new Set(); // 'YYYY-MM-DD|Supervisor'
 let monOpenAux = null; // auxiliar desplegado en la vista Semanal (solo pantalla, no se guarda)
+const monEditSeq = {}; // 'semana|supervisor' → contador de ediciones (para no perder lo tipeado mientras se guarda)
 function monTouch(sup) {
-  monDirtyKeys.add(monWeekKey(monWeekMonday) + '|' + sup);
+  const dk = monWeekKey(monWeekMonday) + '|' + sup;
+  monDirtyKeys.add(dk);
+  monEditSeq[dk] = (monEditSeq[dk] || 0) + 1;
   markDirty();
   monDraftSchedule();
+  monAutoSaveSchedule();
+}
+// ── Autoguardado en Supabase ──
+// Antes había que acordarse de tocar 💾 Guardar: si el supervisor cargaba en el celu y cerraba,
+// lo cargado quedaba solo como borrador en ESE dispositivo y desde otro no aparecía ("no se guardó").
+// Ahora unos segundos después de cada cambio se guarda solo, con la misma fusión por auxiliar que el
+// botón (nunca pisa lo que otro cambió). Si hay conflicto, NO se guarda solo: queda "⚠️ Revisar" y
+// el botón 💾 Guardar pregunta qué hacer.
+let monAutoTimer = null, monSaving = false, monSaveAgain = false, monLastAutoWarn = '';
+const MON_AUTOSAVE_MS = 2500;
+function monAutoSaveSchedule(ms) {
+  clearTimeout(monAutoTimer);
+  monAutoTimer = setTimeout(() => { monAutoTimer = null; if (monInitDone && monDirtyKeys.size) monSave({ auto: true }); }, ms == null ? MON_AUTOSAVE_MS : ms);
+}
+function monSaveBtnState(txt) {
+  const btn = document.getElementById('mon-save-btn');
+  if (btn && txt != null) btn.textContent = txt;
 }
 
 // ═══ BORRADOR LOCAL DE MONITOREOS (solo en este dispositivo) ═══
@@ -2916,7 +2945,7 @@ document.addEventListener('input', e => {
   monDraftTypingTimer = setTimeout(() => { if (document.body.contains(el)) el.dispatchEvent(new Event('change')); }, 700);
 });
 // Al pasar a otra app, bloquear el celu o cerrar la pestaña: se guarda el borrador al instante.
-function monDraftFlush() { monCommitActive(); monDraftSaveNow(); }
+function monDraftFlush() { monCommitActive(); monDraftSaveNow(); if (monInitDone && monDirtyKeys.size && !monSaving) monSave({ auto: true }); }
 document.addEventListener('visibilitychange', () => { if (document.hidden) monDraftFlush(); });
 window.addEventListener('pagehide', monDraftFlush);
 function monSetModo(sup, aux, modo) {
@@ -3644,11 +3673,12 @@ function monExpressItemHTML(sup, aux, i, c) {
   return `<div class="mon-express-item">
       <div class="mon-conv-num">📥 Conversación ${i+1}</div>
       <div class="mon-entry-top">
-        <input type="text" class="mon-inp" style="max-width:70px;" placeholder="Fecha" value="${licEsc(c.fecha||'')}" onchange="monUpdateExpressField('${licJs(sup)}','${licJs(aux)}',${i},'fecha',this.value)">
+        <input type="text" class="mon-inp" style="max-width:70px;" placeholder="Fecha" value="${licEsc(c.fecha||'')}" onchange="monUpdateExpressField('${licJs(sup)}','${licJs(aux)}',${i},'fecha',this.value);monFechaWarn(this)">
         <input type="text" class="mon-inp" placeholder="N° Socio/Convenio" value="${licEsc(c.socio||'')}" onchange="monUpdateExpressField('${licJs(sup)}','${licJs(aux)}',${i},'socio',this.value)">
         <input type="text" class="mon-inp" placeholder="ID Conversación" value="${licEsc(c.idConv||'')}" onchange="monUpdateExpressField('${licJs(sup)}','${licJs(aux)}',${i},'idConv',this.value)">
         <button class="mon-entry-rm" onclick="monRemoveExpress('${licJs(sup)}','${licJs(aux)}',${i})" title="Quitar conversación">✕</button>
       </div>
+      <div class="mon-fecha-warn">${monFechaWarnTxt(c.fecha)}</div>
       <span class="mon-label mon-label-f">Fortalezas</span>
       <textarea class="mon-textarea" oninput="monAutoGrow(this)" placeholder="¿Qué hizo bien?" onchange="monUpdateExpressField('${licJs(sup)}','${licJs(aux)}',${i},'fortalezas',this.value)">${licEsc(c.fortalezas||'')}</textarea>
       <span class="mon-label mon-label-o">Oportunidades de mejora</span>
@@ -3892,7 +3922,7 @@ function monPlRegistrar(manual) {
   if (k >= 0 && monStableStr(monCanonPlanilla(list[k])) === monStableStr(monCanonPlanilla(reg))) { if (manual === true) showBackupToast('✅ Sin cambios en esta Inbox'); return; }
   if (k >= 0) list[k] = reg; else list.push(reg);   // volver a registrar la misma planilla la actualiza, no la duplica
   monTouch(sup);
-  if (manual !== 'silencioso') showBackupToast(`✅ Inbox de ${aux}: ${n} ${n > 1 ? 'conversaciones' : 'conversación'} ${k >= 0 ? 'actualizada' : 'registrada'}${n > 1 && k < 0 ? 's' : ''} — acordate de tocar 💾 Guardar`);
+  if (manual !== 'silencioso') showBackupToast(`✅ Inbox de ${aux}: ${n} ${n > 1 ? 'conversaciones' : 'conversación'} ${k >= 0 ? 'actualizada' : 'registrada'}${n > 1 && k < 0 ? 's' : ''} — se guarda sola en unos segundos`);
   monRender();
 }
 function monPlQuitarRegistro(sup, aux, pid) {
@@ -3931,15 +3961,42 @@ function monPlCloseModal() {
   monRender();
 }
 
+// Aviso si la fecha tipeada (dd/mm, dd/mm/aa o dd/mm/aaaa) no cae en la semana que se está viendo:
+// varios "no se me guardó" eran monitoreos cargados en la semana actual con fecha de la anterior
+// (se guardaban bien, pero después se los buscaba en otra semana).
+function monFechaWarnTxt(txt) {
+  const m = String(txt || '').trim().match(/^(\d{1,2})[\/\-.](\d{1,2})(?:[\/\-.](\d{2,4}))?$/);
+  if (!m) return '';
+  const lun = new Date(monWeekMonday); lun.setHours(0,0,0,0);
+  const dom = new Date(lun); dom.setDate(dom.getDate() + 6);
+  const mes = parseInt(m[2], 10) - 1, dia = parseInt(m[1], 10);
+  let f;
+  if (m[3]) { let y = parseInt(m[3], 10); if (y < 100) y += 2000; f = new Date(y, mes, dia); }
+  else {
+    // Sin año: el año que deje la fecha más cerca de la semana (resuelve el cruce dic → ene).
+    const y0 = lun.getFullYear();
+    f = [y0 - 1, y0, y0 + 1].map(y => new Date(y, mes, dia)).sort((a, b) => Math.abs(a - lun) - Math.abs(b - lun))[0];
+  }
+  if (isNaN(f) || f.getMonth() !== mes) return '';
+  if (f >= lun && f <= dom) return '';
+  const fLun = monMondayOf(f);
+  return `⚠️ Esta fecha es de la ${monWeekLabel(fLun).replace('Semana', 'semana')}, no de la que estás viendo`;
+}
+function monFechaWarn(el) {
+  const box = el && el.closest && el.closest('.mon-entry,.mon-express-item');
+  const w = box && box.querySelector('.mon-fecha-warn');
+  if (w) w.textContent = monFechaWarnTxt(el.value);
+}
 function monEntryHTML(sup, aux, i, e) {
   return `<div class="mon-entry">
     <div class="mon-conv-num">⚡ Conversación ${i+1}</div>
     <div class="mon-entry-top">
-      <input type="text" class="mon-inp" style="max-width:70px;" placeholder="Fecha" value="${licEsc(e.fecha||'')}" onchange="monUpdateField('${licJs(sup)}','${licJs(aux)}',${i},'fecha',this.value)">
+      <input type="text" class="mon-inp" style="max-width:70px;" placeholder="Fecha" value="${licEsc(e.fecha||'')}" onchange="monUpdateField('${licJs(sup)}','${licJs(aux)}',${i},'fecha',this.value);monFechaWarn(this)">
       <input type="text" class="mon-inp" placeholder="N° Socio/Convenio" value="${licEsc(e.socio||'')}" onchange="monUpdateField('${licJs(sup)}','${licJs(aux)}',${i},'socio',this.value)">
       <input type="text" class="mon-inp" placeholder="ID Conversación" value="${licEsc(e.idConv||'')}" onchange="monUpdateField('${licJs(sup)}','${licJs(aux)}',${i},'idConv',this.value)">
       <button class="mon-entry-rm" onclick="monRemoveEntry('${licJs(sup)}','${licJs(aux)}',${i})" title="Quitar conversación">✕</button>
     </div>
+    <div class="mon-fecha-warn">${monFechaWarnTxt(e.fecha)}</div>
     <span class="mon-label mon-label-f">Fortalezas</span>
     <textarea class="mon-textarea" oninput="monAutoGrow(this)" placeholder="¿Qué hizo bien en esta conversación?" onchange="monUpdateField('${licJs(sup)}','${licJs(aux)}',${i},'fortalezas',this.value)">${licEsc(e.fortalezas||'')}</textarea>
     <span class="mon-label mon-label-o">Oportunidades de mejora</span>
@@ -4030,7 +4087,7 @@ async function monDoAddAuxiliar(input, soloSemana) {
     monTouch(sup);
     monOpenAux = found.nombre;
     monRender();
-    showBackupToast(`📅 ${found.nombre} agregado solo para esta semana — tocá 💾 Guardar`);
+    showBackupToast(`📅 ${found.nombre} agregado solo para esta semana`);
     return;
   }
   const data = eqGetYearData(year);
@@ -4077,18 +4134,26 @@ async function monRemoveAuxiliar(sup, aux) {
 // fila en la base, así que el guardado de uno nunca puede pisar el de otro.
 function monRowKey(weekKey, sup) { return 'monitoreos_' + weekKey + '|' + sup; }
 
-async function monSave() {
-  monCommitActive();
+async function monSave(opts) {
+  const auto = !!(opts && opts.auto);
+  // Un solo guardado a la vez: si llega otro pedido mientras tanto, se repite al terminar.
+  if (monSaving) { if (!auto) monSaveAgain = 'manual'; else if (!monSaveAgain) monSaveAgain = true; return; }
+  monSaving = true;
+  clearTimeout(monAutoTimer); monAutoTimer = null;
+  if (!auto) monCommitActive();
   const btn = document.getElementById('mon-save-btn');
   const curKey = monWeekKey(monWeekMonday) + '|' + monSelectedSup;
   // Se guarda TODO lo que se tocó (cualquier semana/supervisor), no solo lo que está en pantalla.
-  const pend = new Set(monDirtyKeys); pend.add(curKey);
-  if (btn) { btn.disabled = true; btn.textContent = '💾 Guardando...'; }
-  let ok = true, incorporados = 0, omitidos = [];
+  const pend = new Set(monDirtyKeys); if (!auto) pend.add(curKey);
+  if (btn) { if (!auto) btn.disabled = true; btn.textContent = '💾 Guardando...'; }
+  let ok = true, incorporados = 0, omitidos = [], conflictoAuto = false;
+  try {
   for (const dk of pend) {
     const pipe = dk.indexOf('|');
     const wk = dk.slice(0, pipe), sup = dk.slice(pipe + 1);
-    const local = monGetWeekData(wk)[sup] || {};
+    const seq0 = monEditSeq[dk] || 0;
+    // Foto de lo local al momento de empezar: lo que se tipee mientras se guarda NO se pierde.
+    const local = JSON.parse(JSON.stringify(monGetWeekData(wk)[sup] || {}));
     let server, serverRaw;
     try { const f = await monFetchSupWeekDataStrict(wk, sup); server = f.data; serverRaw = f.raw; }
     catch(e) { ok = false; continue; } // sin poder leer el servidor no se escribe (queda pendiente)
@@ -4104,14 +4169,14 @@ async function monSave() {
       else conflictos.push(k);                                                                // cambiaron los dos
     });
     if (conflictos.length) {
+      if (auto) { conflictoAuto = true; omitidos.push(`${sup} (${wk})`); continue; } // el autoguardado nunca decide un conflicto
       const nombres = conflictos.map(k => k === '_extra' ? 'Errores de información' : k === MON_COB_KEY ? 'Auxiliares agregados solo por esta semana' : k).join(', ');
       const pisar = confirm(`Semana ${wk} · ${sup}\n\nEstos datos también fueron modificados desde otra sesión mientras editabas:\n${nombres}\n\nAceptar = guardar TU versión para esos auxiliares.\nCancelar = no guardar esta semana todavía (tus cambios quedan en pantalla, sin guardar).`);
       if (!pisar) {
-        // No se escribe nada y no se toca lo tuyo: queda pendiente para revisar.
         omitidos.push(`${sup} (${wk})`);
         continue;
       }
-      conflictos.forEach(k => { merged[k] = local[k] !== undefined ? local[k] : server[k]; });
+      conflictos.forEach(k => { const v = local[k] !== undefined ? local[k] : server[k]; if (v !== undefined) merged[k] = v; });
     }
     if (!monSavedData[wk]) monSavedData[wk] = {};
     // Si el resultado es idéntico a lo que ya está en su fila del servidor, no se reescribe.
@@ -4123,21 +4188,59 @@ async function monSave() {
     } else {
       serverSnapshot[monRowKey(wk, sup)] = serverRaw;
     }
-    monSavedData[wk][sup] = merged;
-    monDirtyKeys.delete(dk);
+    if ((monEditSeq[dk] || 0) === seq0) {
+      // Nadie tocó nada mientras se guardaba: memoria = lo guardado.
+      monSavedData[wk][sup] = merged;
+      monDirtyKeys.delete(dk);
+    } else {
+      // Se siguió escribiendo durante el guardado: se conserva lo nuevo y solo se suman los
+      // auxiliares que llegaron del servidor y que acá no se tocaron. Queda pendiente para el próximo guardado.
+      const cur = monGetWeekData(wk)[sup] || (monSavedData[wk][sup] = {});
+      Object.keys(merged).forEach(k => { if (!monSameAux(k, merged[k], local[k]) && monSameAux(k, cur[k], local[k])) cur[k] = merged[k]; });
+    }
+  }
+  } finally {
+    monSaving = false;
   }
   monDraftDropSaved(pend);
   monDraftSaveNow(); // lo que haya quedado pendiente sigue resguardado en el teléfono
   if (ok && !omitidos.length && !monDirtyKeys.size) clearDirty();
-  if (!ok) showBackupToast('⚠️ No se pudo guardar (problema de conexión). Lo cargado sigue en pantalla — probá de nuevo.');
+  if (ok && !omitidos.length) monLastAutoWarn = '';
+  if (!ok) showBackupToast(auto ? '⚠️ Sin conexión: lo cargado quedó en este dispositivo — se reintenta solo' : '⚠️ No se pudo guardar (problema de conexión). Lo cargado sigue en pantalla — probá de nuevo.');
+  else if (conflictoAuto) {
+    const m = '⚠️ ' + omitidos.join(', ') + ' también se modificó desde otra sesión — tocá 💾 Guardar para decidir';
+    if (m !== monLastAutoWarn) { monLastAutoWarn = m; showBackupToast(m); }
+  }
   else if (omitidos.length) showBackupToast('⚠️ Quedó sin guardar: ' + omitidos.join(', ') + ' — revisalo y volvé a guardar');
-  else if (incorporados) showBackupToast('✅ Guardado — también se sumaron cambios hechos desde otra sesión');
+  else if (incorporados && !auto) showBackupToast('✅ Guardado — también se sumaron cambios hechos desde otra sesión');
   if (btn) {
     btn.disabled = false;
-    btn.textContent = ok && !omitidos.length ? '✅ Guardado' : '⚠️ Revisar';
-    setTimeout(() => { btn.textContent = '💾 Guardar'; }, 1800);
+    btn.textContent = ok && !omitidos.length ? (monDirtyKeys.size ? '💾 Guardar' : '✅ Guardado') : '⚠️ Revisar';
+    if (ok && !omitidos.length) setTimeout(() => { if (!monSaving) btn.textContent = '💾 Guardar'; }, 1800);
   }
-  monRender();
+  // Reintento automático si falló la conexión (sin pisar nada: vuelve a leer el servidor y fusiona).
+  if (!ok && monDirtyKeys.size) monAutoSaveSchedule(20000);
+  if (monSaveAgain) { const manual = monSaveAgain === 'manual'; monSaveAgain = false; monSave({ auto: !manual }); return; }
+  else if (monDirtyKeys.size && ok && !omitidos.length) monAutoSaveSchedule(); // cambios hechos durante el guardado
+  // El autoguardado no redibuja si se está escribiendo (perdería el foco/cursor en el celu).
+  const ae = document.activeElement;
+  const escribiendo = ae && ae.closest && ae.closest('#mon-grid') && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName);
+  const plAbierta = document.getElementById('mon-pl-modal')?.classList.contains('open');
+  if (!auto || (!escribiendo && !plAbierta)) monRender();
+  else monRefreshUnsavedTags();
+}
+// Actualiza solo las marquitas "● Sin guardar" sin redibujar (para no sacar el foco del campo).
+function monRefreshUnsavedTags() {
+  const key = monWeekKey(monWeekMonday), sup = monSelectedSup;
+  const dirty = monDirtyKeys.has(key + '|' + sup);
+  const base = dirty ? monBaseFor(key, sup) : null;
+  const supRaw = (monSavedData[key] || {})[sup] || {};
+  document.querySelectorAll('#mon-grid .mon-acc-item').forEach(it => {
+    const aux = it.getAttribute('data-aux');
+    const tag = it.querySelector('.mon-unsaved');
+    const unsaved = dirty && !monSameAux(aux, supRaw[aux], base[aux]);
+    if (!unsaved && tag) tag.remove();
+  });
 }
 
 // ── Export PDF individual por auxiliar (mismo patrón que el resto de la app: HTML propio + window.print()) ──
@@ -6197,7 +6300,19 @@ function getWorkDays(y, m) {
 }
 
 const HOLIDAYS_2026 = ['2026-01-01','2026-03-03','2026-03-04','2026-03-24','2026-04-02','2026-04-03','2026-04-06','2026-05-01','2026-05-25','2026-06-15','2026-06-19','2026-07-09','2026-07-10','2026-08-17','2026-10-09','2026-10-12','2026-11-20','2026-12-08','2026-12-25'];
-function isHoliday(d) { return HOLIDAYS_2026.includes(fmtDate(d)); }
+// Feriados manuales (para cualquier año): se guardan en rotacion_overrides con key "__feriado__|YYYY-MM-DD".
+// role_id 'si' = el día es feriado aunque no esté en la lista fija; 'no' = se quitó un feriado de la lista
+// fija (p. ej. si se trasladó). Afecta a todos los supervisores ese día.
+const ROT_FER_PREFIX = '__feriado__|';
+function rotIsFerKey(k) { return typeof k === 'string' && k.startsWith(ROT_FER_PREFIX); }
+function isHolidayFixed(d) { return HOLIDAYS_2026.includes(typeof d === 'string' ? d : fmtDate(d)); }
+function isHoliday(d) {
+  const fd = typeof d === 'string' ? d : fmtDate(d);
+  const m = (typeof rotOverrides !== 'undefined') ? rotOverrides[ROT_FER_PREFIX + fd] : undefined;
+  if (m === 'si') return true;
+  if (m === 'no') return false;
+  return HOLIDAYS_2026.includes(fd);
+}
 function fmtDate(d) { return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
 function fmtDisp(d)  { return `${DIAS_CORTO[d.getDay()]} ${d.getDate()}`; }
 
@@ -6385,7 +6500,7 @@ function renderRotTabla(work, supFilter='') {
   const el=document.getElementById('rot-content');
   const days=work;
   let html=`<div class="rot-table-wrap"><table class="rot-table"><thead><tr><th class="col-sup">Supervisor</th>`;
-  days.forEach(d=>{const hol=isHoliday(d);html+=`<th class="col-day${hol?' feriado-head':''}">${DIAS_CORTO[d.getDay()]}<br><span style="font-size:9px;font-weight:400;opacity:.75">${d.getDate()} ${MESES[d.getMonth()].slice(0,3)}</span>${hol?' ✶':''}</th>`;});
+  days.forEach(d=>{const hol=isHoliday(d);html+=`<th class="col-day${hol?' feriado-head':''}" onclick="rotToggleFeriado('${fmtDate(d)}')" title="${hol?'Feriado — tocá para quitarlo':'Tocá para marcar este día como feriado'}">${DIAS_CORTO[d.getDay()]}<br><span style="font-size:9px;font-weight:400;opacity:.75">${d.getDate()} ${MESES[d.getMonth()].slice(0,3)}</span>${hol?' ✶':''}</th>`;});
   html+=`</tr></thead><tbody>`;
   const supsToShow = supFilter ? SUPERVISORS.filter(s=>s===supFilter) : SUPERVISORS;
   supsToShow.forEach(sup=>{
@@ -6455,7 +6570,7 @@ function renderRotSemanal(work, supFilter='') {
   semanas.forEach((s,si)=>{
     html+=`<div class="section-label">Semana ${si+1} · ${s[0].getDate()} al ${s[s.length-1].getDate()} de ${MESES[rotMonth]}</div>`;
     html+=`<div class="rot-table-wrap" style="margin-bottom:16px;"><table class="rot-table"><thead><tr><th class="col-sup">Supervisor</th>`;
-    s.forEach(d=>html+=`<th class="col-day">${DIAS_CORTO[d.getDay()]}<br><span style="font-size:9px;opacity:.7">${d.getDate()}</span></th>`);
+    s.forEach(d=>{const hol=isHoliday(d);html+=`<th class="col-day${hol?' feriado-head':''}" onclick="rotToggleFeriado('${fmtDate(d)}')" title="${hol?'Feriado — tocá para quitarlo':'Tocá para marcar este día como feriado'}">${DIAS_CORTO[d.getDay()]}<br><span style="font-size:9px;opacity:.7">${d.getDate()}</span>${hol?' ✶':''}</th>`;});
     html+=`</tr></thead><tbody>`;
     const supsToShow = supFilter ? SUPERVISORS.filter(s=>s===supFilter) : SUPERVISORS;
     supsToShow.forEach(sup=>{
@@ -6538,6 +6653,7 @@ function rotOpenModal(sup, fd) {
   const d=new Date(fd+'T12:00:00');
   document.getElementById('rot-modal-title').textContent=sup;
   document.getElementById('rot-modal-sub').textContent=`${DIAS_CORTO[d.getDay()]} ${d.getDate()} de ${MESES[d.getMonth()]}`;
+  rotRenderFerBox(fd);
   const rolesEl=document.getElementById('rot-modal-roles');
   rolesEl.innerHTML=ROLES.map(r=>`
     <button class="modal-role-btn ${rotSelectedRole===r.id?'selected':''}" style="background:${r.bg};color:${r.fg};" onclick="rotSelectRole('${r.id}',this)">${r.label}</button>
@@ -6585,6 +6701,48 @@ async function rotClearOverride() {
   else showBackupToast('⚠️ No se pudo guardar este cambio — revisá tu conexión e intentá de nuevo');
 }
 function rotCloseModal() { document.getElementById('rot-modal').style.display='none'; }
+
+// ── Feriado manual (todo el día, para los 12 supervisores) ──
+function rotRenderFerBox(fd) {
+  const el = document.getElementById('rot-modal-fer'); if (!el) return;
+  const hol = isHoliday(fd);
+  const manual = rotOverrides[ROT_FER_PREFIX + fd];
+  const txt = hol
+    ? (manual === 'si' ? '✶ Feriado marcado a mano' : '✶ Este día es feriado')
+    : (manual === 'no' ? 'Feriado quitado a mano (día laborable)' : 'Día laborable');
+  el.innerHTML = `<span>${txt}</span><button class="btn" onclick="rotToggleFeriado('${fd}')">${hol ? 'Quitar feriado' : '✶ Marcar como feriado'}</button>`;
+}
+async function rotToggleFeriado(fd) {
+  const k = ROT_FER_PREFIX + fd;
+  const d = new Date(fd + 'T12:00:00');
+  const fecha = `${DIAS_CORTO[d.getDay()]} ${d.getDate()} de ${MESES[d.getMonth()]}`;
+  const eraFeriado = isHoliday(fd);
+  const msg = eraFeriado
+    ? `¿Quitar el feriado del ${fecha}?\n\nEse día vuelve a ser laborable para todos y la rotación automática del resto del mes se reacomoda (los ajustes manuales se mantienen).`
+    : `¿Marcar el ${fecha} como FERIADO?\n\nEse día queda sin tareas para los 12 supervisores y la rotación automática del resto del mes se reacomoda (los ajustes manuales se mantienen).`;
+  if (!confirm(msg)) return;
+  const old = rotOverrides[k];
+  // Valor nuevo: si coincide con la lista fija, no hace falta guardar nada (se borra el ajuste).
+  const quiereFeriado = !eraFeriado;
+  const nuevo = quiereFeriado === isHolidayFixed(fd) ? undefined : (quiereFeriado ? 'si' : 'no');
+  if (nuevo === undefined) delete rotOverrides[k]; else rotOverrides[k] = nuevo;
+  rotCalCache = {};
+  rotCloseModal(); rotRender();
+  setSyncStatus('saving');
+  const ok = nuevo === undefined
+    ? await sbDeleteRetry('rotacion_overrides', '?key=eq.' + encodeURIComponent(k))
+    : await sbUpsertRetry('rotacion_overrides', { key: k, role_id: nuevo, updated_at: new Date().toISOString() });
+  setSyncStatus(ok ? 'ok' : 'error');
+  if (!ok) {
+    if (old === undefined) delete rotOverrides[k]; else rotOverrides[k] = old;
+    rotCalCache = {}; rotRender();
+    showBackupToast('⚠️ No se pudo guardar el feriado — revisá tu conexión e intentá de nuevo');
+    return;
+  }
+  setLastMod(currentSupUser || 'Admin');
+  showBackupToast(quiereFeriado ? `✶ ${fecha} marcado como feriado` : `✓ ${fecha} vuelve a ser laborable`);
+  await appendAuditEntry({ ts: new Date().toISOString(), sup: currentSupUser || '', key: 'rotacion_diaria', label: 'Rotación Diaria', detail: [quiereFeriado ? `Marcó feriado el ${fecha}` : `Quitó el feriado del ${fecha}`] });
+}
 async function sbDeleteRetry(table, params, tries = 2) {
   for (let i = 0; i < tries; i++) {
     const ok = await sbDelete(table, params);
@@ -6597,6 +6755,7 @@ async function rotResetOverrides() {
   const supFilter = document.getElementById('rot-sup-filter')?.value || '';
   const monthLabel = `${MESES[rotMonth]} ${rotYear}`;
   const keysToDelete = Object.keys(rotOverrides).filter(k => {
+    if (rotIsFerKey(k)) return false; // los feriados manuales no son ajustes de supervisor
     const pipeIdx = k.lastIndexOf('|');
     const sup = k.slice(0, pipeIdx), fecha = k.slice(pipeIdx + 1);
     if (supFilter && sup !== supFilter) return false;
