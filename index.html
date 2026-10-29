@@ -1620,6 +1620,7 @@ document.getElementById('p').addEventListener('keydown', evt => { if(evt.key==='
             </select>
             <button class="btn" id="rot-week-btn" onclick="rotToggleWeekOnly(this)" title="Ver solo semana actual">📅 Esta semana</button>
             <button class="btn" onclick="rotResetOverrides()" title="Borra los ajustes manuales del mes y supervisor que estás viendo — no afecta otros meses ni supervisores">↺ Resetear</button>
+            <button class="btn btn-primary" id="rot-save-btn" onclick="rotManualSave(this)" title="Confirma en el servidor los cambios que hiciste en esta sesión (cada cambio ya se guarda solo al instante)">💾 Guardar</button>
             <button class="btn btn-primary" onclick="rotRefreshOverrides(this)" title="Trae los ajustes manuales más recientes guardados por cualquier supervisor">🔄 Actualizar</button>
             <button class="btn btn-primary" onclick="rotExportPDF()">📄 PDF</button>
           </div>
@@ -6322,6 +6323,18 @@ let rotOverrides = {};
 let rotCalCache  = {};
 let rotView      = 'tabla';
 let rotModalSup=null, rotModalDate=null, rotSelectedRole=null;
+// Cambios hechos en ESTA sesión: key → { val (role_id o null = borrado), ts, ok (confirmado en el servidor) }.
+// El 💾 Guardar manual reenvía SOLO estos (nunca todo el historial, que era lo que pisaba cambios de otros).
+const rotSessionEdits = {};
+function rotTrackEdit(k, val, ok) {
+  rotSessionEdits[k] = { val: val == null ? null : val, ts: Date.now(), ok: !!ok };
+  rotUpdateSaveBtn();
+}
+function rotUpdateSaveBtn() {
+  const btn = document.getElementById('rot-save-btn'); if (!btn || btn.disabled) return;
+  const pend = Object.values(rotSessionEdits).filter(e => !e.ok).length;
+  btn.textContent = pend ? `💾 Guardar (${pend} pend.)` : '💾 Guardar';
+}
 
 function shuffle(arr){const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
 
@@ -6684,6 +6697,7 @@ async function rotSaveOverride() {
   rotCloseModal(); rotRender();
   setSyncStatus('saving');
   const ok=await sbUpsertRetry('rotacion_overrides',{key:k,role_id:rotSelectedRole,updated_at:new Date().toISOString()});
+  rotTrackEdit(k, rotSelectedRole, ok);
   setSyncStatus(ok?'ok':'error');
   if(ok){setLastMod(currentSupUser||'Admin');logRotChange(rotModalSup, rotModalDate, oldRole, rotSelectedRole);}
   else showBackupToast('⚠️ No se pudo guardar este cambio — revisá tu conexión e intentá de nuevo');
@@ -6695,7 +6709,8 @@ async function rotClearOverride() {
   rotCalCache={};
   rotCloseModal(); rotRender();
   setSyncStatus('saving');
-  const ok = await sbDelete('rotacion_overrides','?key=eq.'+encodeURIComponent(k));
+  const ok = await sbDeleteRetry('rotacion_overrides','?key=eq.'+encodeURIComponent(k));
+  rotTrackEdit(k, null, ok);
   setSyncStatus(ok?'ok':'error');
   if(ok) logRotChange(rotModalSup, rotModalDate, oldRole, null);
   else showBackupToast('⚠️ No se pudo guardar este cambio — revisá tu conexión e intentá de nuevo');
@@ -6733,10 +6748,9 @@ async function rotToggleFeriado(fd) {
     ? await sbDeleteRetry('rotacion_overrides', '?key=eq.' + encodeURIComponent(k))
     : await sbUpsertRetry('rotacion_overrides', { key: k, role_id: nuevo, updated_at: new Date().toISOString() });
   setSyncStatus(ok ? 'ok' : 'error');
+  rotTrackEdit(k, nuevo, ok);
   if (!ok) {
-    if (old === undefined) delete rotOverrides[k]; else rotOverrides[k] = old;
-    rotCalCache = {}; rotRender();
-    showBackupToast('⚠️ No se pudo guardar el feriado — revisá tu conexión e intentá de nuevo');
+    showBackupToast('⚠️ No se pudo guardar el feriado — tocá 💾 Guardar para reintentar');
     return;
   }
   setLastMod(currentSupUser || 'Admin');
@@ -6770,12 +6784,50 @@ async function rotResetOverrides() {
   for (const k of keysToDelete) {
     const ok = await sbDeleteRetry('rotacion_overrides', '?key=eq.' + encodeURIComponent(k));
     if (ok) delete rotOverrides[k]; else allOk = false;
+    rotTrackEdit(k, null, ok);
   }
   rotCalCache = {};
   rotRender();
   setSyncStatus(allOk ? 'ok' : 'error');
   if (!allOk) showBackupToast('⚠️ Algunos ajustes no se pudieron borrar — revisá tu conexión e intentá de nuevo');
   await appendAuditEntry({ ts: new Date().toISOString(), sup: currentSupUser || '', key: 'rotacion_diaria', label: 'Rotación Diaria', detail: [`Eliminó ${keysToDelete.length} ajuste(s) manual(es) de ${scopeLabel}`] });
+}
+
+// Guardado manual "por las dudas": cada cambio ya se guarda solo al tocarlo, pero si alguno falló
+// (conexión) queda pendiente. Este botón compara SOLO lo que se cambió en esta sesión contra el servidor
+// y reenvía lo que falte. Si otro supervisor cambió esa misma celda DESPUÉS que vos, se respeta lo suyo.
+async function rotManualSave(btn) {
+  const keys = Object.keys(rotSessionEdits);
+  if (!keys.length) { showBackupToast('✅ No hiciste cambios en esta sesión — todo lo que ves ya está guardado'); return; }
+  const prevTxt = '💾 Guardar';
+  if (btn) { btn.disabled = true; btn.textContent = '💾 Guardando...'; }
+  setSyncStatus('saving');
+  let server;
+  try { server = await sbGetStrict('rotacion_overrides', '?select=key,role_id,updated_at&key=in.(' + keys.map(k => '"' + k.replace(/"/g, '\\"') + '"').map(encodeURIComponent).join(',') + ')'); }
+  catch (e) {
+    setSyncStatus('error');
+    showBackupToast('⚠️ Sin conexión con el servidor — probá de nuevo en un rato (tus cambios siguen en pantalla)');
+    if (btn) { btn.disabled = false; rotUpdateSaveBtn(); }
+    return;
+  }
+  const srv = {}; server.forEach(r => { srv[r.key] = r; });
+  let enviados = 0, fallidos = 0, ajenos = 0;
+  for (const k of keys) {
+    const ed = rotSessionEdits[k];
+    const row = srv[k];
+    const srvVal = row ? row.role_id : null;
+    if (srvVal === ed.val) { ed.ok = true; continue; }                  // ya está bien en el servidor
+    const srvTs = row && row.updated_at ? new Date(row.updated_at).getTime() : 0;
+    if (ed.ok && srvTs > ed.ts) { ajenos++; continue; }                 // otro lo cambió después: se respeta
+    const ok = ed.val == null
+      ? await sbDeleteRetry('rotacion_overrides', '?key=eq.' + encodeURIComponent(k))
+      : await sbUpsertRetry('rotacion_overrides', { key: k, role_id: ed.val, updated_at: new Date().toISOString() });
+    ed.ok = ok; if (ok) { ed.ts = Date.now(); enviados++; } else fallidos++;
+  }
+  setSyncStatus(fallidos ? 'error' : 'ok');
+  if (fallidos) showBackupToast(`⚠️ ${fallidos} cambio(s) no se pudieron guardar — revisá tu conexión y volvé a tocar 💾 Guardar`);
+  else showBackupToast(`✅ Todo guardado${enviados ? ` (${enviados} cambio(s) reenviado(s))` : ''}${ajenos ? ` — ${ajenos} celda(s) las cambió otro supervisor después, se dejó lo suyo` : ''}`);
+  if (btn) { btn.disabled = false; btn.textContent = fallidos ? '⚠️ Reintentar' : '✅ Guardado'; setTimeout(rotUpdateSaveBtn, 1800); }
 }
 
 // Trae de nuevo los ajustes manuales desde el servidor (por si otro supervisor cargó
